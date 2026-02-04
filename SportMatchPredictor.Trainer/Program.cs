@@ -1,2 +1,6 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using Microsoft.ML;
+using SportMatchPredictor.ML.Data;
+
+var mlContext = new MLContext(seed: 42);
+
+Console.WriteLine("ML Trainer initialized.");
