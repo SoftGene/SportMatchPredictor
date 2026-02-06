@@ -1,4 +1,17 @@
 <Solution>
+  <Folder Name="/data/" />
+  <Folder Name="/data/processed/">
+    <File Path="data/processed/dataset.csv" />
+  </Folder>
+  <Folder Name="/data/raw/">
+    <File Path="data/raw/Country.csv" />
+    <File Path="data/raw/League.csv" />
+    <File Path="data/raw/Match.csv" />
+    <File Path="data/raw/Player.csv" />
+    <File Path="data/raw/Player_Attributes.csv" />
+    <File Path="data/raw/Team.csv" />
+    <File Path="data/raw/Team_Attributes.csv" />
+  </Folder>
   <Project Path="SportMatchPredictor.App/SportMatchPredictor.App.csproj" Id="fc0b8920-ff28-4dc3-85d5-b0df2030e34b" />
   <Project Path="SportMatchPredictor.ML/SportMatchPredictor.ML.csproj" Id="5b8c486e-49f1-4be6-b154-6286f824eeff" />
   <Project Path="SportMatchPredictor.Trainer/SportMatchPredictor.Trainer.csproj" Id="d7313773-39b2-43d7-8f09-d70d91def2e8" />

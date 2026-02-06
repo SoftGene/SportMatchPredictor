@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SportMatchPredictor.Trainer": {
+      "commandName": "Project",
+      "workingDirectory": "$(SolutionDir)"
+    }
+  }
+}

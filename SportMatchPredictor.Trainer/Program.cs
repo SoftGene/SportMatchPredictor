@@ -1,6 +1,3 @@
-﻿using Microsoft.ML;
-using SportMatchPredictor.ML.Data;
+﻿using SportMatchPredictor.Trainer.Preprocessing;
 
-var mlContext = new MLContext(seed: 42);
-
-Console.WriteLine("ML Trainer initialized.");
+DataPreprocessor.Run();
