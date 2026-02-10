@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # Datasets (raw and processed)
 data/
+
+# Models
+models/

@@ -73,6 +73,11 @@ public static class DataPreprocessor
             "AwayAvgGoalsAgainst",
             "AwayPointsPerGame",
             "AwayWinRate",
+            "AvgGoalsForDiff",
+            "AvgGoalsAgainstDiff",
+            "PointsPerGameDiff",
+            "WinRateDiff",
+            "GoalDiffDiff",
             "Result" // 0=AwayWin, 1=Draw, 2=HomeWin
         ));
 
@@ -127,11 +132,17 @@ public static class DataPreprocessor
             var hf = ComputeFeatures(homeHist);
             var af = ComputeFeatures(awayHist);
 
+            var avgGoalsForDiff = hf.AvgGoalsFor - af.AvgGoalsFor;
+            var avgGoalsAgainstDiff = hf.AvgGoalsAgainst - af.AvgGoalsAgainst;
+            var pointsPerGameDiff = hf.PointsPerGame - af.PointsPerGame;
+            var winRateDiff = hf.WinRate - af.WinRate;
+            var goalDiffDiff = (hf.AvgGoalsFor - hf.AvgGoalsAgainst) - (af.AvgGoalsFor - af.AvgGoalsAgainst);
+
             int label = GetLabel(homeGoals, awayGoals); // 0/1/2
 
             // Пишем строку
             outWriter.WriteLine(string.Join(',',
-                leagueId,
+                leagueId.ToString(CultureInfo.InvariantCulture),
                 EscapeSeason(seasonStr),
                 hf.AvgGoalsFor.ToString(CultureInfo.InvariantCulture),
                 hf.AvgGoalsAgainst.ToString(CultureInfo.InvariantCulture),
@@ -141,7 +152,12 @@ public static class DataPreprocessor
                 af.AvgGoalsAgainst.ToString(CultureInfo.InvariantCulture),
                 af.PointsPerGame.ToString(CultureInfo.InvariantCulture),
                 af.WinRate.ToString(CultureInfo.InvariantCulture),
-                label
+                avgGoalsForDiff.ToString(CultureInfo.InvariantCulture),
+                avgGoalsAgainstDiff.ToString(CultureInfo.InvariantCulture),
+                pointsPerGameDiff.ToString(CultureInfo.InvariantCulture),
+                winRateDiff.ToString(CultureInfo.InvariantCulture),
+                goalDiffDiff.ToString(CultureInfo.InvariantCulture),
+                label.ToString(CultureInfo.InvariantCulture)
             ));
 
             written++;
@@ -165,7 +181,6 @@ public static class DataPreprocessor
 
         Enqueue(history[homeId], new MatchStats(hg, ag, homePoints));
         Enqueue(history[awayId], new MatchStats(ag, hg, awayPoints));
-
     }
 
     private static void EnsureTeam(Dictionary<int, Queue<MatchStats>> history, int teamId)
@@ -199,7 +214,6 @@ public static class DataPreprocessor
             points / games,
             wins / games
         );
-
     }
 
     private static int GetLabel(int homeGoals, int awayGoals)
