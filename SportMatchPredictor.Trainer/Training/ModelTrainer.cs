@@ -1,9 +1,12 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Globalization;
+using System.Collections.Generic;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using SportMatchPredictor.ML.Data;
+using SportMatchPredictor.ML;
 
 namespace SportMatchPredictor.Trainer.Training;
 
@@ -30,93 +33,43 @@ public static class ModelTrainer
             separatorChar: ','
         );
 
-        // 2) Split
-        // Time-based split: test = last season
+        // 2) Split (time-based): test = last season
         const string testSeason = "2015/2016";
 
-        // Превращаем IDataView -> IEnumerable<MatchData>
-        var allRows = ml.Data.CreateEnumerable<MatchData>(data, reuseRowObject: false);
+        var allRows = ml.Data.CreateEnumerable<MatchData>(data, reuseRowObject: false).ToList();
 
-        // Train: всё что строго меньше testSeason
-        var trainRows = allRows.Where(r => string.CompareOrdinal(r.Season, testSeason) < 0);
+        var trainList = allRows
+            .Where(r => string.CompareOrdinal(r.Season, testSeason) < 0)
+            .ToList();
 
-        // Test: ровно testSeason
-        var testRows = allRows.Where(r => string.Equals(r.Season, testSeason, StringComparison.Ordinal));
+        var testList = allRows
+            .Where(r => string.Equals(r.Season, testSeason, StringComparison.Ordinal))
+            .ToList();
 
-        // IEnumerable -> IDataView
-        var trainData = ml.Data.LoadFromEnumerable(trainRows);
-        var testData = ml.Data.LoadFromEnumerable(testRows);
+        var trainData = ml.Data.LoadFromEnumerable(trainList);
+        var testData = ml.Data.LoadFromEnumerable(testList);
 
-        Console.WriteLine($"Train rows: {trainRows.Count()}");
-        Console.WriteLine($"Test rows:  {testRows.Count()}");
+        Console.WriteLine($"Train rows: {trainList.Count}");
+        Console.WriteLine($"Test rows:  {testList.Count}");
 
-        EvaluateBaselines(trainRows, testRows);
+        EvaluateBaselines(trainList, testList);
 
         // 3) Pipeline
-        // Label (Result) -> key, Season -> one-hot, Features -> concatenate, normalize
-        //var pipeline =
-        //    ml.Transforms.Conversion.MapValueToKey("Label", nameof(MatchData.Result))
-        //    .Append(ml.Transforms.Categorical.OneHotEncoding(nameof(MatchData.Season)))
-        //    .Append(ml.Transforms.Concatenate("Features",
-        //        nameof(MatchData.LeagueId),
-        //        nameof(MatchData.Season),
-        //        nameof(MatchData.HomeAvgGoalsFor),
-        //        nameof(MatchData.HomeAvgGoalsAgainst),
-        //        nameof(MatchData.HomePointsPerGame),
-        //        nameof(MatchData.HomeWinRate),
-        //        nameof(MatchData.AwayAvgGoalsFor),
-        //        nameof(MatchData.AwayAvgGoalsAgainst),
-        //        nameof(MatchData.AwayPointsPerGame),
-        //        nameof(MatchData.AwayWinRate),
-        //        nameof(MatchData.AvgGoalsForDiff),
-        //        nameof(MatchData.AvgGoalsAgainstDiff),
-        //        nameof(MatchData.PointsPerGameDiff),
-        //        nameof(MatchData.WinRateDiff),
-        //        nameof(MatchData.GoalDiffDiff)
-        //    ))
-        //    .Append(ml.Transforms.NormalizeMinMax("Features"))
-        //    .Append(ml.MulticlassClassification.Trainers.OneVersusAll(
-        //        ml.BinaryClassification.Trainers.FastTree(
-        //            labelColumnName: "Label",
-        //            featureColumnName: "Features"
-        //        )))
-        //    .Append(ml.Transforms.Conversion.MapKeyToValue("PredictedLabel"));
-
-        //Console.WriteLine("Training...");
-        //var model = pipeline.Fit(trainData);
-
-        //Console.WriteLine("Evaluating...");
-        //var predictions = model.Transform(testData);
-
-        //var metrics = ml.MulticlassClassification.Evaluate(
-        //    data: predictions,
-        //    labelColumnName: "Label",
-        //    predictedLabelColumnName: "PredictedLabel"
-        //);
-
-        //PrintMetrics(metrics);
-
-        //// Save model
-        //ml.Model.Save(model, trainData.Schema, modelPath);
-        //Console.WriteLine($"Model saved: {modelPath}");
-
-        //var engine = ml.Model.CreatePredictionEngine<MatchData, MatchPrediction>(model);
-
-        // 1) Базовый пайплайн без тренера (одинаков для всех конфигов)
         var basePipeline =
             ml.Transforms.Conversion.MapValueToKey("Label", nameof(MatchData.Result))
-            .Append(ml.Transforms.Categorical.OneHotEncoding(nameof(MatchData.Season)))
             .Append(ml.Transforms.Concatenate("Features",
                 nameof(MatchData.LeagueId),
-                nameof(MatchData.Season),
+
                 nameof(MatchData.HomeAvgGoalsFor),
                 nameof(MatchData.HomeAvgGoalsAgainst),
                 nameof(MatchData.HomePointsPerGame),
                 nameof(MatchData.HomeWinRate),
+
                 nameof(MatchData.AwayAvgGoalsFor),
                 nameof(MatchData.AwayAvgGoalsAgainst),
                 nameof(MatchData.AwayPointsPerGame),
                 nameof(MatchData.AwayWinRate),
+
                 nameof(MatchData.AvgGoalsForDiff),
                 nameof(MatchData.AvgGoalsAgainstDiff),
                 nameof(MatchData.PointsPerGameDiff),
@@ -125,7 +78,7 @@ public static class ModelTrainer
             ))
             .Append(ml.Transforms.NormalizeMinMax("Features"));
 
-        // 2) Конфиги
+        // 4) Конфиги FastTree
         var configs = new[]
         {
             new FastTreeCfg("FT-1 (32/300/20)", 32, 300, 20),
@@ -186,18 +139,19 @@ public static class ModelTrainer
         Console.WriteLine($"\n✅ Best: {bestCfg.Name} | MicroAccuracy={bestMicro:0.####}");
         Console.WriteLine($"Model saved: {modelPath}");
 
-        // PredictionEngine должен быть от bestModel
+        // Sample prediction (для sanity-check)
         var engine = ml.Model.CreatePredictionEngine<MatchData, MatchPrediction>(bestModel);
-
 
         var sample = new MatchData
         {
             LeagueId = 1729,
-            Season = "2015/2016",
+            Season = testSeason, // просто как поле данных; в Features мы Season не используем
+
             HomeAvgGoalsFor = 1.6f,
             HomeAvgGoalsAgainst = 1.0f,
             HomePointsPerGame = 1.8f,
             HomeWinRate = 0.55f,
+
             AwayAvgGoalsFor = 1.2f,
             AwayAvgGoalsAgainst = 1.4f,
             AwayPointsPerGame = 1.2f,
@@ -209,13 +163,39 @@ public static class ModelTrainer
             WinRateDiff = 0.55f - 0.35f,
             GoalDiffDiff = (1.6f - 1.0f) - (1.2f - 1.4f),
 
-            Result = 0
+            Result = 0 // не важен для Predict
         };
 
         var pred = engine.Predict(sample);
+
+        // Точный маппинг из DataPreprocessor:
+        // 0=AwayWin, 1=Draw, 2=HomeWin
         Console.WriteLine($"Sample predicted result: {pred.PredictedResult} (0=Away,1=Draw,2=Home)");
+
+        try
+        {
+            Console.WriteLine($"Label text: {MatchResultHelpers.ToUiText((int)pred.PredictedResult)}");
+        }
+        catch
+        {
+
+        }
+
         if (pred.Score is { Length: > 0 })
+        {
             Console.WriteLine($"Scores: {string.Join(", ", pred.Score.Select(s => s.ToString("0.000", CultureInfo.InvariantCulture)))}");
+
+            // Softmax => псевдо-вероятности (удобно для WPF UI)
+            try
+            {
+                var p = MathHelpers.Softmax(pred.Score);
+                Console.WriteLine($"P(Away)={p[0]:0.000}, P(Draw)={p[1]:0.000}, P(Home)={p[2]:0.000}");
+            }
+            catch
+            {
+
+            }
+        }
     }
 
     private static void PrintMetrics(MulticlassClassificationMetrics m)
@@ -226,33 +206,28 @@ public static class ModelTrainer
         Console.WriteLine($"LogLoss:       {m.LogLoss:0.####}");
         Console.WriteLine($"LogLossRed.:   {m.LogLossReduction:0.####}");
 
-        // Confusion matrix
         Console.WriteLine("\nConfusion Matrix:");
         var cm = m.ConfusionMatrix;
         for (int i = 0; i < cm.NumberOfClasses; i++)
-        {
             Console.WriteLine(string.Join(" ", cm.Counts[i].Select(v => v.ToString().PadLeft(6))));
-        }
     }
 
     private readonly record struct FastTreeCfg(string Name, int Leaves, int Trees, int MinLeaf);
 
-    private static void EvaluateBaselines(IEnumerable<MatchData> trainRows, IEnumerable<MatchData> testRows)
+    private static void EvaluateBaselines(IReadOnlyList<MatchData> train, IReadOnlyList<MatchData> test)
     {
-        // Важно: материализуем, чтобы не перечислять несколько раз
-        var train = trainRows.ToList();
-        var test = testRows.ToList();
-
-        // Baseline 1: всегда Home win (2)
+        // Baseline 1: всегда HomeWin (2)
         var alwaysHomeAcc = test.Count == 0
             ? 0
             : test.Count(r => (int)r.Result == 2) / (double)test.Count;
 
         // Baseline 2: самый частый класс в train
-        int mostFrequent = train
-            .GroupBy(r => (int)r.Result)
-            .OrderByDescending(g => g.Count())
-            .First().Key;
+        int mostFrequent = train.Count == 0
+            ? 2
+            : train
+                .GroupBy(r => (int)r.Result)
+                .OrderByDescending(g => g.Count())
+                .First().Key;
 
         var mostFreqAcc = test.Count == 0
             ? 0

@@ -1,12 +1,132 @@
 ﻿<Window x:Class="SportMatchPredictor.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:SportMatchPredictor.App"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="SportMatchPredictor" Height="650" Width="980"
+        WindowStartupLocation="CenterScreen">
 
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="SportMatchPredictor" FontSize="28" FontWeight="SemiBold"/>
+            <TextBlock Text="OVA + FastTree • time-aware features • Material Design WPF"
+                       Opacity="0.7" Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- Content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="3*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: inputs -->
+            <materialDesign:Card Grid.Column="0" Padding="16" Margin="0,0,16,0">
+                <StackPanel>
+                    <TextBlock Text="Match setup" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+                    <ComboBox x:Name="SeasonCombo"
+                              materialDesign:HintAssist.Hint="Season"
+                              Margin="0,0,0,12"/>
+
+                    <ComboBox x:Name="HomeTeamCombo"
+                              materialDesign:HintAssist.Hint="Home team"
+                              Margin="0,0,0,12"
+                              IsEditable="True"/>
+
+                    <ComboBox x:Name="AwayTeamCombo"
+                              materialDesign:HintAssist.Hint="Away team"
+                              Margin="0,0,0,12"
+                              IsEditable="True"/>
+
+                    <Button x:Name="PredictBtn"
+                            Content="Predict"
+                            Height="44"
+                            Margin="0,8,0,0"
+                            Click="PredictBtn_Click"/>
+
+                    <TextBlock x:Name="StatusText"
+                               Margin="0,12,0,0"
+                               TextWrapping="Wrap"
+                               Opacity="0.8"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Right: results -->
+            <materialDesign:Card Grid.Column="1" Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Prediction result" FontSize="18" FontWeight="SemiBold"/>
+
+                    <StackPanel Grid.Row="1" Margin="0,12,0,0">
+                        <TextBlock x:Name="PredictedLabelText"
+                                   Text="—"
+                                   FontSize="26"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock x:Name="PredictedDetailsText"
+                                   Text=""
+                                   Opacity="0.75"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="2" Margin="0,18,0,0">
+                        <TextBlock Text="Probabilities" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Away win" VerticalAlignment="Center"/>
+                            <ProgressBar x:Name="AwayBar" Grid.Column="1" Height="18" Minimum="0" Maximum="1"/>
+                            <TextBlock x:Name="AwayPct" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Draw" VerticalAlignment="Center"/>
+                            <ProgressBar x:Name="DrawBar" Grid.Column="1" Height="18" Minimum="0" Maximum="1"/>
+                            <TextBlock x:Name="DrawPct" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Home win" VerticalAlignment="Center"/>
+                            <ProgressBar x:Name="HomeBar" Grid.Column="1" Height="18" Minimum="0" Maximum="1"/>
+                            <TextBlock x:Name="HomePct" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Separator Margin="0,10,0,10"/>
+
+                        <TextBlock Text="Computed features (debug)"
+                                   FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBox x:Name="FeaturesDebug"
+                                 IsReadOnly="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Height="180"/>
+                    </StackPanel>
+                </Grid>
+            </materialDesign:Card>
+        </Grid>
     </Grid>
 </Window>

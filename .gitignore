@@ -365,5 +365,8 @@ FodyWeavers.xsd
 # Datasets (raw and processed)
 data/
 
+!SportMatchPredictor.ML/Data/
+!SportMatchPredictor.ML/Data/*.cs
+
 # Models
 models/

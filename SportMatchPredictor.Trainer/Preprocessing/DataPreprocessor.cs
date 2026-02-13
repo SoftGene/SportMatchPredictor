@@ -12,6 +12,17 @@ public static class DataPreprocessor
     // Минимум матчей в истории команды, чтобы строить признаки
     private const int MinHistory = 5;
 
+    // Сырые данные матча (нужно, чтобы отсортировать по времени)
+    private sealed record RawMatch(
+        DateTime Date,
+        int HomeId,
+        int AwayId,
+        int HomeGoals,
+        int AwayGoals,
+        int LeagueId,
+        string Season
+    );
+
     public static void Run()
     {
         var root = Directory.GetCurrentDirectory();
@@ -21,7 +32,6 @@ public static class DataPreprocessor
         Directory.CreateDirectory(processedDir);
 
         var matchPath = Path.Combine(rawDir, "Match.csv");
-
 
         if (!File.Exists(matchPath))
             throw new FileNotFoundException($"Не найден файл: {matchPath}");
@@ -39,28 +49,77 @@ public static class DataPreprocessor
             DetectColumnCountChanges = false
         };
 
-        // История команд: последние N матчей (очки, голы)
-        var history = new Dictionary<int, Queue<MatchStats>>();
-
         int written = 0;
         int skipped = 0;
 
-        using var reader = new StreamReader(matchPath);
-        using var csv = new CsvReader(reader, csvConfig);
+        // 1) Считываем все матчи в список
+        List<RawMatch> matches = new(capacity: 250_000);
 
-        csv.Read();
-        csv.ReadHeader();
-        var header = csv.HeaderRecord ?? Array.Empty<string>();
+        using (var reader = new StreamReader(matchPath))
+        using (var csv = new CsvReader(reader, csvConfig))
+        {
+            csv.Read();
+            csv.ReadHeader();
+            var header = csv.HeaderRecord ?? Array.Empty<string>();
 
-        int idxDate = GetIndex(header, "date");
-        int idxHome = GetIndex(header, "home_team_api_id");
-        int idxAway = GetIndex(header, "away_team_api_id");
-        int idxHG = GetIndex(header, "home_team_goal");
-        int idxAG = GetIndex(header, "away_team_goal");
-        int idxLeague = GetIndex(header, "league_id");
-        int idxSeason = GetIndex(header, "season");
+            int idxDate = GetIndex(header, "date");
+            int idxHome = GetIndex(header, "home_team_api_id");
+            int idxAway = GetIndex(header, "away_team_api_id");
+            int idxHG = GetIndex(header, "home_team_goal");
+            int idxAG = GetIndex(header, "away_team_goal");
+            int idxLeague = GetIndex(header, "league_id");
+            int idxSeason = GetIndex(header, "season");
 
+            while (csv.Read())
+            {
+                // Достаём нужные поля безопасно (string может быть пустым)
+                var dateStr = csv.GetField(idxDate);
+                var homeStr = csv.GetField(idxHome);
+                var awayStr = csv.GetField(idxAway);
+                var hgStr = csv.GetField(idxHG);
+                var agStr = csv.GetField(idxAG);
+                var leagueStr = csv.GetField(idxLeague);
+                var seasonStr = csv.GetField(idxSeason);
+
+                // Базовые проверки на пустые значения
+                if (!TryParseInt(homeStr, out int homeId) ||
+                    !TryParseInt(awayStr, out int awayId) ||
+                    !TryParseInt(hgStr, out int homeGoals) ||
+                    !TryParseInt(agStr, out int awayGoals) ||
+                    !TryParseInt(leagueStr, out int leagueId) ||
+                    string.IsNullOrWhiteSpace(seasonStr))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                if (!DateTime.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                matches.Add(new RawMatch(
+                    Date: dt,
+                    HomeId: homeId,
+                    AwayId: awayId,
+                    HomeGoals: homeGoals,
+                    AwayGoals: awayGoals,
+                    LeagueId: leagueId,
+                    Season: seasonStr
+                ));
+            }
+        }
+
+        // 2) Сортируем по дате (критично для корректной "истории")
+        matches.Sort((a, b) => a.Date.CompareTo(b.Date));
+
+        // 3) История команд: последние N матчей (очки, голы)
+        var history = new Dictionary<int, Queue<MatchStats>>();
+
+        // 4) Пишем итоговый датасет
         using var outWriter = new StreamWriter(outPath);
+
         // Финальный датасет (только числовые признаки + label)
         outWriter.WriteLine(string.Join(',',
             "LeagueId",
@@ -81,37 +140,14 @@ public static class DataPreprocessor
             "Result" // 0=AwayWin, 1=Draw, 2=HomeWin
         ));
 
-        while (csv.Read())
+        foreach (var m in matches)
         {
-            // Достаём нужные поля безопасно (string может быть пустым)
-            var dateStr = csv.GetField(idxDate);
-            var homeStr = csv.GetField(idxHome);
-            var awayStr = csv.GetField(idxAway);
-            var hgStr = csv.GetField(idxHG);
-            var agStr = csv.GetField(idxAG);
-            var leagueStr = csv.GetField(idxLeague);
-            var seasonStr = csv.GetField(idxSeason);
-
-            // Базовые проверки на пустые значения
-            if (!TryParseInt(homeStr, out int homeId) ||
-                !TryParseInt(awayStr, out int awayId) ||
-                !TryParseInt(hgStr, out int homeGoals) ||
-                !TryParseInt(agStr, out int awayGoals) ||
-                !TryParseInt(leagueStr, out int leagueId) ||
-                string.IsNullOrWhiteSpace(seasonStr))
-            {
-                skipped++;
-                continue;
-            }
-
-            // date в твоём датасете обычно: "2008-08-17 00:00:00"
-            if (!DateTime.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out _))
-            {
-                // дату нам сейчас не обязательно писать в итоговый датасет,
-                // но валидация полезна.
-                skipped++;
-                continue;
-            }
+            int homeId = m.HomeId;
+            int awayId = m.AwayId;
+            int homeGoals = m.HomeGoals;
+            int awayGoals = m.AwayGoals;
+            int leagueId = m.LeagueId;
+            string seasonStr = m.Season;
 
             EnsureTeam(history, homeId);
             EnsureTeam(history, awayId);
