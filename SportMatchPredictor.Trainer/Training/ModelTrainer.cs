@@ -56,20 +56,20 @@ public static class ModelTrainer
 
         // 3) Pipeline
         var basePipeline =
-            ml.Transforms.Conversion.MapValueToKey("Label", nameof(MatchData.Result))
+            ml.Transforms.Conversion.MapValueToKey(
+                outputColumnName: "Label",
+                inputColumnName: nameof(MatchData.Result),
+                keyOrdinality: Microsoft.ML.Transforms.ValueToKeyMappingEstimator.KeyOrdinality.ByValue)
             .Append(ml.Transforms.Concatenate("Features",
                 nameof(MatchData.LeagueId),
-
                 nameof(MatchData.HomeAvgGoalsFor),
                 nameof(MatchData.HomeAvgGoalsAgainst),
                 nameof(MatchData.HomePointsPerGame),
                 nameof(MatchData.HomeWinRate),
-
                 nameof(MatchData.AwayAvgGoalsFor),
                 nameof(MatchData.AwayAvgGoalsAgainst),
                 nameof(MatchData.AwayPointsPerGame),
                 nameof(MatchData.AwayWinRate),
-
                 nameof(MatchData.AvgGoalsForDiff),
                 nameof(MatchData.AvgGoalsAgainstDiff),
                 nameof(MatchData.PointsPerGameDiff),
