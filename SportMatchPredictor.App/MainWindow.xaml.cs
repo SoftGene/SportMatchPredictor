@@ -95,7 +95,7 @@ public partial class MainWindow : Window
                 AwayPct.Text = $"{p[0] * 100:0.0}%";
                 DrawPct.Text = $"{p[1] * 100:0.0}%";
                 HomePct.Text = $"{p[2] * 100:0.0}%";
-                ConfidenceText.Text = $"Confidence: {p[label] * 100:0.0}%";
+                ConfidenceText.Text = $"{p[label] * 100:0.0}%";
             }
             else
             {
@@ -156,5 +156,15 @@ public partial class MainWindow : Window
             dir = dir.Parent;
         }
         return Directory.GetCurrentDirectory();
+    }
+
+    private void IncludeFeatureSummary_Checked(object sender, RoutedEventArgs e)
+    {
+
+    }
+
+    private void SeasonCombo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+
     }
 }

@@ -41,12 +41,104 @@
             <SolidColorBrush x:Key="SuccessBrush"                      Color="#66BB6A"/>
             <SolidColorBrush x:Key="WarnBrush"                         Color="#FFA726"/>
             <SolidColorBrush x:Key="DangerBrush"                       Color="#EF5350"/>
+            <SolidColorBrush x:Key="SurfaceTintBrush"                  Color="#F2F5EA"/>
+            <SolidColorBrush x:Key="SuccessSurfaceBrush"               Color="#E8F4E5"/>
+            <SolidColorBrush x:Key="WarnSurfaceBrush"                  Color="#FFF2E1"/>
+            <SolidColorBrush x:Key="DangerSurfaceBrush"                Color="#FCE7E5"/>
 
             <!-- ─── Стиль окна ─── -->
             <Style TargetType="Window">
                 <Setter Property="Background"              Value="{DynamicResource MaterialDesignBackground}"/>
                 <Setter Property="TextElement.Foreground"  Value="{DynamicResource MaterialDesignBody}"/>
                 <Setter Property="FontFamily"              Value="{materialDesign:MaterialDesignFont}"/>
+            </Style>
+
+            <Style x:Key="OptionCheckBoxStyle" TargetType="CheckBox">
+                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontSize" Value="12.5"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <Grid SnapsToDevicePixels="True"
+                                  VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border x:Name="CheckBorder"
+                                        Grid.Column="0"
+                                        Width="20"
+                                        Height="20"
+                                        CornerRadius="6"
+                                        Background="{DynamicResource MaterialDesignPaper}"
+                                        BorderBrush="{DynamicResource AppOutlineBrush}"
+                                        BorderThickness="1.5"
+                                        VerticalAlignment="Center">
+                                    <Path x:Name="CheckGlyph"
+                                          Data="M2,5 L5.5,9 L12,1"
+                                          Stroke="White"
+                                          StrokeThickness="2.2"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round"
+                                          Width="11"
+                                          Height="9"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Stretch="Uniform"
+                                          Visibility="Collapsed"/>
+                                </Border>
+
+                                <ContentPresenter Grid.Column="2"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"/>
+                            </Grid>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="CheckBorder" Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                    <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                    <Setter TargetName="CheckGlyph" Property="Visibility" Value="Visible"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.5"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="SelectionComboBoxStyle"
+       TargetType="ComboBox"
+       BasedOn="{StaticResource MaterialDesignOutlinedComboBox}">
+                <Setter Property="Height"                              Value="48"/>
+                <Setter Property="MinHeight"                           Value="48"/>
+                <Setter Property="Padding"                             Value="14,12,34,12"/>
+                <Setter Property="Background"                          Value="{DynamicResource MaterialDesignPaper}"/>
+                <Setter Property="BorderBrush"                         Value="{DynamicResource AppOutlineBrush}"/>
+                <Setter Property="BorderThickness"                     Value="1.5"/>
+                <Setter Property="Foreground"                          Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="VerticalContentAlignment"            Value="Center"/>
+                <Setter Property="materialDesign:HintAssist.IsFloating" Value="False"/>
+                <Setter Property="materialDesign:HintAssist.Foreground" Value="{DynamicResource MaterialDesignBodyLight}"/>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                        <Setter Property="BorderThickness" Value="1.5"/>
+                    </Trigger>
+                    <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                        <Setter Property="BorderThickness" Value="1.5"/>
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
         </ResourceDictionary>

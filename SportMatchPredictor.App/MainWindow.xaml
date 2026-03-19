@@ -123,17 +123,17 @@
                                    FontSize="10" FontWeight="Medium"
                                    Opacity="0.5" Margin="0,0,0,6"/>
                         <ComboBox x:Name="SeasonCombo"
-                                  materialDesign:HintAssist.Hint="Select season"
-                                  Height="44"
-                                  Margin="0,0,0,20"/>
+                                  Style="{StaticResource SelectionComboBoxStyle}"
+                                  materialDesign:HintAssist.Hint="Select season"                                  
+                                  Margin="0,0,0,20" SelectionChanged="SeasonCombo_SelectionChanged"/>
 
                         <TextBlock Text="HOME TEAM"
                                    FontSize="10" FontWeight="Medium"
                                    Opacity="0.5" Margin="0,0,0,6"/>
                         <ComboBox x:Name="HomeTeamCombo"
-                                  materialDesign:HintAssist.Hint="Choose home team"
+                                  Style="{StaticResource SelectionComboBoxStyle}"
                                   IsEditable="True"
-                                  Height="44"
+                                  materialDesign:HintAssist.Hint="Select home team"
                                   Margin="0,0,0,0"/>
 
                         <!-- VS divider -->
@@ -166,9 +166,9 @@
                                    FontSize="10" FontWeight="Medium"
                                    Opacity="0.5" Margin="0,0,0,6"/>
                         <ComboBox x:Name="AwayTeamCombo"
-                                  materialDesign:HintAssist.Hint="Choose away team"
+                                  Style="{StaticResource SelectionComboBoxStyle}"
                                   IsEditable="True"
-                                  Height="44"
+                                  materialDesign:HintAssist.Hint="Select away team"
                                   Margin="0,0,0,24"/>
 
                         <!-- Predict — primary button -->
@@ -214,12 +214,13 @@
                             <CheckBox x:Name="IncludeFeatureSummary"
                                       Content="Show feature summary after prediction"
                                       IsChecked="True"
-                                      FontSize="12"
-                                      Margin="0,0,0,6"/>
+                                      VerticalContentAlignment="Center"
+                                      Style="{StaticResource OptionCheckBoxStyle}"
+                                      Margin="0,0,0,6" Checked="IncludeFeatureSummary_Checked"/>
                             <CheckBox x:Name="UseTimeAwareFeatures"
                                       Content="Use time-aware feature computation"
                                       IsChecked="True"
-                                      FontSize="12"/>
+                                      Style="{StaticResource OptionCheckBoxStyle}"/>
                         </StackPanel>
                     </Border>
 
@@ -238,7 +239,6 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
@@ -247,7 +247,7 @@
                             Padding="26,16"
                             BorderBrush="{DynamicResource MaterialDesignDivider}"
                             BorderThickness="0,0,0,1">
-                        <Grid>
+                        <StackPanel>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <materialDesign:PackIcon Kind="PollBox"
                                                          Width="20" Height="20"
@@ -259,176 +259,311 @@
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                             <TextBlock x:Name="PredictedDetailsText"
-                                       HorizontalAlignment="Right"
-                                       VerticalAlignment="Center"
-                                       Opacity="0.55"
-                                       FontSize="12"/>
-                        </Grid>
+                                       Margin="30,6,0,0"
+                                       Opacity="0.58"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
                     </Border>
 
                     <!-- Hero outcome block -->
                     <Border Grid.Row="1"
                             Margin="26,18,26,0"
-                            Padding="22,18"
-                            CornerRadius="10"
-                            Background="{DynamicResource MaterialDesignToolBarBackground}">
+                            Padding="24,22"
+                            CornerRadius="14"
+                            Background="{DynamicResource SurfaceTintBrush}"
+                            BorderBrush="{DynamicResource MaterialDesignDivider}"
+                            BorderThickness="1">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="190"/>
                             </Grid.ColumnDefinitions>
 
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="PREDICTED OUTCOME"
-                                           FontSize="10" FontWeight="Medium"
-                                           Opacity="0.45" Margin="0,0,0,5"/>
+                            <StackPanel Grid.Column="0"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,22,0">
+                                <TextBlock Text="Predicted outcome"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource MaterialDesignBodyLight}"/>
                                 <TextBlock x:Name="PredictedLabelText"
                                            Text="—"
-                                           FontSize="38"
+                                           FontSize="34"
                                            FontWeight="Bold"
-                                           Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                           Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                           Margin="0,4,0,8"/>
+                                <TextBlock Text="Based on recent form and engineered match features."
+                                           FontSize="12"
+                                           Opacity="0.6"/>
                             </StackPanel>
 
                             <Border Grid.Column="1"
                                     VerticalAlignment="Center"
-                                    HorizontalAlignment="Right"
-                                    Background="{DynamicResource PrimaryHueMidBrush}"
-                                    CornerRadius="10"
-                                    Padding="20,12"
-                                    Margin="16,0,0,0">
-                                <StackPanel HorizontalAlignment="Center">
+                                    Background="{DynamicResource PrimaryHueDarkBrush}"
+                                    CornerRadius="12"
+                                    Padding="18,16">
+                                <StackPanel>
                                     <TextBlock Text="CONFIDENCE"
                                                Foreground="White"
-                                               Opacity="0.75"
-                                               FontSize="10" FontWeight="Medium"
-                                               HorizontalAlignment="Center"
-                                               Margin="0,0,0,3"/>
+                                               Opacity="0.68"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"/>
                                     <TextBlock x:Name="ConfidenceText"
                                                Foreground="White"
-                                               FontSize="26"
+                                               FontSize="32"
                                                FontWeight="Bold"
-                                               HorizontalAlignment="Center"/>
+                                               Margin="0,6,0,4"/>
+                                    <TextBlock Text="Highest class probability"
+                                               Foreground="White"
+                                               Opacity="0.68"
+                                               FontSize="11"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
                     </Border>
 
-                    <!-- Probabilities label -->
-                    <StackPanel Grid.Row="2"
-                                Orientation="Horizontal"
-                                Margin="26,18,26,0">
-                        <TextBlock Text="OUTCOME PROBABILITIES"
-                                   FontSize="10" FontWeight="Medium"
-                                   Opacity="0.45" VerticalAlignment="Center"/>
-                        <Rectangle Width="1" Height="12"
-                                   Fill="{DynamicResource MaterialDesignDivider}"
-                                   Margin="12,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="softmax · last 5 matches per team"
-                                   FontSize="11" Opacity="0.4"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-
-                    <!-- Probability bars -->
-                    <StackPanel Grid.Row="3" Margin="26,14,26,0">
-
-                        <!-- Away win -->
-                        <Grid Margin="0,0,0,14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="58"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
-                                <Border Width="10" Height="10" CornerRadius="5"
-                                        Background="#EF5350" Margin="0,0,9,0"/>
-                                <TextBlock Text="Away Win" VerticalAlignment="Center"
-                                           FontSize="13" FontWeight="Medium"/>
+                    <!-- Probability panel -->
+                    <Border Grid.Row="2"
+                            Margin="26,18,26,0"
+                            Padding="20"
+                            CornerRadius="12"
+                            Background="{DynamicResource MaterialDesignPaper}"
+                            BorderBrush="{DynamicResource MaterialDesignDivider}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="OUTCOME PROBABILITIES"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Opacity="0.45"
+                                           VerticalAlignment="Center"/>
+                                <Rectangle Width="1"
+                                           Height="12"
+                                           Fill="{DynamicResource MaterialDesignDivider}"
+                                           Margin="12,0"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Text="Softmax distribution"
+                                           FontSize="11"
+                                           Opacity="0.45"
+                                           VerticalAlignment="Center"/>
                             </StackPanel>
-                            <ProgressBar x:Name="AwayBar"
-                                         Grid.Column="1" Height="12"
-                                         Minimum="0" Maximum="1"
-                                         Foreground="#EF5350"
-                                         VerticalAlignment="Center"/>
-                            <TextBlock x:Name="AwayPct"
-                                       Grid.Column="2"
-                                       HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       FontSize="13" FontWeight="Bold"
-                                       Foreground="#EF5350"/>
-                        </Grid>
 
-                        <!-- Draw -->
-                        <Grid Margin="0,0,0,14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="58"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
-                                <Border Width="10" Height="10" CornerRadius="5"
-                                        Background="#FFA726" Margin="0,0,9,0"/>
-                                <TextBlock Text="Draw" VerticalAlignment="Center"
-                                           FontSize="13" FontWeight="Medium"/>
-                            </StackPanel>
-                            <ProgressBar x:Name="DrawBar"
-                                         Grid.Column="1" Height="12"
-                                         Minimum="0" Maximum="1"
-                                         Foreground="#FFA726"
-                                         VerticalAlignment="Center"/>
-                            <TextBlock x:Name="DrawPct"
-                                       Grid.Column="2"
-                                       HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       FontSize="13" FontWeight="Bold"
-                                       Foreground="#FFA726"/>
-                        </Grid>
+                            <Border Margin="0,16,0,0"
+                                    Padding="14,12"
+                                    CornerRadius="10"
+                                    Background="{DynamicResource DangerSurfaceBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="72"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Orientation="Horizontal"
+                                                Grid.Column="0"
+                                                VerticalAlignment="Center">
+                                        <Border Width="12"
+                                                Height="12"
+                                                CornerRadius="6"
+                                                Background="{DynamicResource DangerBrush}"
+                                                Margin="0,0,10,0"/>
+                                        <TextBlock Text="Away Win"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                    <ProgressBar x:Name="AwayBar"
+                                                 Grid.Column="1"
+                                                 Height="10"
+                                                 Minimum="0"
+                                                 Maximum="1"
+                                                 Background="#33EF5350"
+                                                 Foreground="{DynamicResource DangerBrush}"
+                                                 VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="AwayPct"
+                                               Grid.Column="2"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               FontSize="13"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource DangerBrush}"/>
+                                </Grid>
+                            </Border>
 
-                        <!-- Home win -->
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="58"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
-                                <Border Width="10" Height="10" CornerRadius="5"
-                                        Background="#66BB6A" Margin="0,0,9,0"/>
-                                <TextBlock Text="Home Win" VerticalAlignment="Center"
-                                           FontSize="13" FontWeight="Medium"/>
-                            </StackPanel>
-                            <ProgressBar x:Name="HomeBar"
-                                         Grid.Column="1" Height="12"
-                                         Minimum="0" Maximum="1"
-                                         Foreground="#66BB6A"
-                                         VerticalAlignment="Center"/>
-                            <TextBlock x:Name="HomePct"
-                                       Grid.Column="2"
-                                       HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       FontSize="13" FontWeight="Bold"
-                                       Foreground="#66BB6A"/>
-                        </Grid>
+                            <Border Margin="0,10,0,0"
+                                    Padding="14,12"
+                                    CornerRadius="10"
+                                    Background="{DynamicResource WarnSurfaceBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="72"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Orientation="Horizontal"
+                                                Grid.Column="0"
+                                                VerticalAlignment="Center">
+                                        <Border Width="12"
+                                                Height="12"
+                                                CornerRadius="6"
+                                                Background="{DynamicResource WarnBrush}"
+                                                Margin="0,0,10,0"/>
+                                        <TextBlock Text="Draw"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                    <ProgressBar x:Name="DrawBar"
+                                                 Grid.Column="1"
+                                                 Height="10"
+                                                 Minimum="0"
+                                                 Maximum="1"
+                                                 Background="#33FFA726"
+                                                 Foreground="{DynamicResource WarnBrush}"
+                                                 VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="DrawPct"
+                                               Grid.Column="2"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               FontSize="13"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource WarnBrush}"/>
+                                </Grid>
+                            </Border>
 
-                    </StackPanel>
+                            <Border Margin="0,10,0,0"
+                                    Padding="14,12"
+                                    CornerRadius="10"
+                                    Background="{DynamicResource SuccessSurfaceBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="72"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Orientation="Horizontal"
+                                                Grid.Column="0"
+                                                VerticalAlignment="Center">
+                                        <Border Width="12"
+                                                Height="12"
+                                                CornerRadius="6"
+                                                Background="{DynamicResource SuccessBrush}"
+                                                Margin="0,0,10,0"/>
+                                        <TextBlock Text="Home Win"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                    <ProgressBar x:Name="HomeBar"
+                                                 Grid.Column="1"
+                                                 Height="10"
+                                                 Minimum="0"
+                                                 Maximum="1"
+                                                 Background="#3366BB6A"
+                                                 Foreground="{DynamicResource SuccessBrush}"
+                                                 VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="HomePct"
+                                               Grid.Column="2"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               FontSize="13"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource SuccessBrush}"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
 
                     <!-- Features debug expander -->
-                    <ScrollViewer Grid.Row="4"
-                                  Margin="26,14,26,20"
+                    <ScrollViewer Grid.Row="3"
+                                  Margin="26,16,26,20"
                                   VerticalScrollBarVisibility="Auto">
-                        <Expander Header="Computed Features (debug)"
-                                  IsExpanded="True"
+                        <Expander IsExpanded="True"
                                   materialDesign:ExpanderAssist.HorizontalHeaderPadding="0,6,0,6">
-                            <Border Margin="0,8,0,0"
-                                    Padding="14"
-                                    CornerRadius="8"
-                                    Background="{DynamicResource MaterialDesignToolBarBackground}">
-                                <TextBox x:Name="FeaturesDebug"
-                                         IsReadOnly="True"
-                                         TextWrapping="Wrap"
-                                         Background="Transparent"
-                                         BorderThickness="0"
-                                         Padding="0"
-                                         FontFamily="Consolas"
-                                         FontSize="12"
-                                         Opacity="0.82"
-                                         VerticalScrollBarVisibility="Disabled"/>
+                            <Expander.Header>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="28"
+                                            Height="28"
+                                            CornerRadius="8"
+                                            Background="{DynamicResource SurfaceTintBrush}"
+                                            VerticalAlignment="Center">
+                                        <materialDesign:PackIcon Kind="CodeBraces"
+                                                                 Width="16"
+                                                                 Height="16"
+                                                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                 HorizontalAlignment="Center"
+                                                                 VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1"
+                                                Margin="12,0,0,0"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="Computed Features"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBlock Text="Readable model inputs for the current prediction"
+                                                   FontSize="11"
+                                                   Opacity="0.55"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Expander.Header>
+                            <Border Margin="0,10,0,0"
+                                    Padding="18"
+                                    CornerRadius="12"
+                                    Background="{DynamicResource MaterialDesignPaper}"
+                                    BorderBrush="{DynamicResource MaterialDesignDivider}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Feature Summary"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold"/>
+                                            <TextBlock Text="Generated statistics used by the model."
+                                                       FontSize="11"
+                                                       Opacity="0.55"
+                                                       Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="1"
+                                                Background="{DynamicResource MaterialDesignToolBarBackground}"
+                                                CornerRadius="999"
+                                                Padding="10,4"
+                                                VerticalAlignment="Top">
+                                            <TextBlock Text="DEBUG"
+                                                       FontSize="10"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource PrimaryHueDarkBrush}"/>
+                                        </Border>
+                                    </Grid>
+
+                                    <Border Grid.Row="1"
+                                            Background="{DynamicResource MaterialDesignToolBarBackground}"
+                                            CornerRadius="10"
+                                            Padding="14">
+                                        <TextBox x:Name="FeaturesDebug"
+                                                 IsReadOnly="True"
+                                                 TextWrapping="Wrap"
+                                                 AcceptsReturn="True"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Padding="0"
+                                                 FontFamily="Consolas"
+                                                 FontSize="12.5"
+                                                 Opacity="0.9"
+                                                 VerticalScrollBarVisibility="Disabled"/>
+                                    </Border>
+                                </Grid>
                             </Border>
                         </Expander>
                     </ScrollViewer>
