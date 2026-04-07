@@ -45,6 +45,7 @@
             <SolidColorBrush x:Key="SuccessSurfaceBrush"               Color="#E8F4E5"/>
             <SolidColorBrush x:Key="WarnSurfaceBrush"                  Color="#FFF2E1"/>
             <SolidColorBrush x:Key="DangerSurfaceBrush"                Color="#FCE7E5"/>
+            <SolidColorBrush x:Key="SecondaryAccentBrush" Color="#DDE8CB"/>
 
             <!-- ─── Стиль окна ─── -->
             <Style TargetType="Window">

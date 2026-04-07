@@ -129,6 +129,8 @@ public partial class MainWindow : Window
                 DrawPct.Text = $"{p[1] * 100:0.0}%";
                 HomePct.Text = $"{p[2] * 100:0.0}%";
                 ConfidenceText.Text = $"{p[label] * 100:0.0}%";
+
+                HighlightWinningBar(label);
             }
             else
             {
@@ -164,6 +166,43 @@ public partial class MainWindow : Window
 
     }
 
+    private void HighlightWinningBar(int label)
+    {
+        // сбрасываем все три в обычное состояние
+        AwayBorder.BorderThickness = new Thickness(0);
+        DrawBorder.BorderThickness = new Thickness(0);
+        HomeBorder.BorderThickness = new Thickness(0);
+
+        AwayBorder.Opacity = 0.6;
+        DrawBorder.Opacity = 0.6;
+        HomeBorder.Opacity = 0.6;
+
+        // выделяем победителя
+        var winner = label switch
+        {
+            0 => AwayBorder,
+            1 => DrawBorder,
+            2 => HomeBorder,
+            _ => null
+        };
+
+        if (winner is not null)
+        {
+            winner.BorderThickness = new Thickness(2);
+            winner.BorderBrush = label switch
+            {
+                0 => new System.Windows.Media.SolidColorBrush(
+                         System.Windows.Media.Color.FromRgb(0xEF, 0x53, 0x50)),
+                1 => new System.Windows.Media.SolidColorBrush(
+                         System.Windows.Media.Color.FromRgb(0xFF, 0xA7, 0x26)),
+                2 => new System.Windows.Media.SolidColorBrush(
+                         System.Windows.Media.Color.FromRgb(0x66, 0xBB, 0x6A)),
+                _ => System.Windows.Media.Brushes.Transparent
+            };
+            winner.Opacity = 1.0;
+        }
+    }
+
     private void ClearBtn_Click(object sender, RoutedEventArgs e)
     {
         SeasonCombo.SelectedIndex = -1;
@@ -180,6 +219,13 @@ public partial class MainWindow : Window
         HomeBar.Value = 0;
         HomePct.Text = string.Empty;
         FeaturesDebug.Text = string.Empty;
+        PredictBtn.IsEnabled = false;
+        AwayBorder.BorderThickness = new Thickness(0);
+        DrawBorder.BorderThickness = new Thickness(0);
+        HomeBorder.BorderThickness = new Thickness(0);
+        AwayBorder.Opacity = 1.0;
+        DrawBorder.Opacity = 1.0;
+        HomeBorder.Opacity = 1.0;
     }
 
     private static string FindSolutionRoot(string appBaseDir)
