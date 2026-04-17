@@ -3,15 +3,51 @@ using SportMatchPredictor.ML.Data;
 using SportMatchPredictor.ML.Services;
 using System.IO;
 using System.Windows;
+using System.Windows.Media.Animation;
 
 namespace SportMatchPredictor.App;
 
 public partial class MainWindow : Window
 {
-    private IReadOnlyList<TeamRecord> _teams = Array.Empty<TeamRecord>();
+    private List<TeamViewModel> _teams = new();
     private IReadOnlyList<RawMatchRecord> _matches = Array.Empty<RawMatchRecord>();
 
     private ModelService? _model;
+
+    private static readonly string ApiKey = LoadApiKey();
+
+    private static string LoadApiKey()
+    {
+        try
+        {
+            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keys.json");
+            if (!File.Exists(path)) return string.Empty;
+            var json = File.ReadAllText(path);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            return doc.RootElement.GetProperty("ApiKey").GetString() ?? string.Empty;
+        }
+        catch { return string.Empty; }
+    }
+    private readonly Dictionary<int, string?> _logoCache = new();
+
+    private string? GetLogoPath(int teamApiId)
+        => _logoCache.TryGetValue(teamApiId, out var path) ? path : null;
+
+    private readonly List<string> _history = new();
+
+    private void AddToHistory(string home, string away, string season, int label, float confPct)
+    {
+        var outcome = label switch { 0 => "Away Win", 1 => "Draw", 2 => "Home Win", _ => "?" };
+        var entry = $"{home} vs {away}  ·  {season}  ·  {outcome}  ·  {confPct:0.0}%";
+
+        if (_history.Contains(entry))
+            return;
+
+        _history.Insert(0, entry);
+        if (_history.Count > 5) _history.RemoveAt(5);
+        HistoryList.ItemsSource = null;
+        HistoryList.ItemsSource = _history;
+    }
 
     public MainWindow()
     {
@@ -39,7 +75,8 @@ public partial class MainWindow : Window
             var teamCsv = Path.Combine(rawDir, "Team.csv");
             var matchCsv = Path.Combine(rawDir, "Match.csv");
 
-            _teams = FootballDataLoader.LoadTeams(teamCsv);
+            var rawTeams = FootballDataLoader.LoadTeams(teamCsv);
+            _teams = rawTeams.Select(t => new TeamViewModel(t)).ToList();
             _matches = FootballDataLoader.LoadMatches(matchCsv);
 
             var seasons = FootballDataLoader.GetSeasons(_matches);
@@ -48,12 +85,13 @@ public partial class MainWindow : Window
 
             HomeTeamCombo.ItemsSource = _teams;
             AwayTeamCombo.ItemsSource = _teams;
-            HomeTeamCombo.DisplayMemberPath = nameof(TeamRecord.TeamLongName);
-            AwayTeamCombo.DisplayMemberPath = nameof(TeamRecord.TeamLongName);
             HomeTeamCombo.SelectionChanged += (_, _) => ValidateSelection();
             AwayTeamCombo.SelectionChanged += (_, _) => ValidateSelection();
 
             StatusText.Text = $"Loaded: Teams={_teams.Count}, Matches={_matches.Count}.";
+
+            var logosDir = Path.Combine(root, "data", "logos");
+            _ = LoadLogosAsync(_teams.ToList(), logosDir);
         }
         catch (Exception ex)
         {
@@ -62,12 +100,24 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task LoadLogosAsync(List<TeamViewModel> teams, string logosDir)
+    {
+        foreach (var vm in teams)
+        {
+            var path = await SportMatchPredictor.ML.Services.TeamLogoService.GetLogoPathAsync(
+                vm.TeamApiId, vm.TeamLongName, ApiKey, logosDir);
+            _logoCache[vm.TeamApiId] = path;
+            if (path is not null)
+                Application.Current.Dispatcher.BeginInvoke(() => vm.LogoPath = path);
+        }
+    }
+
     private void ValidateSelection()
     {
         if (_matches.Count == 0) return;
         if (SeasonCombo.SelectedItem is not string season) return;
-        if (HomeTeamCombo.SelectedItem is not TeamRecord home) return;
-        if (AwayTeamCombo.SelectedItem is not TeamRecord away) return;
+        if (HomeTeamCombo.SelectedItem is not TeamViewModel home) return;
+        if (AwayTeamCombo.SelectedItem is not TeamViewModel away) return;
 
         if (home.TeamApiId == away.TeamApiId)
         {
@@ -97,9 +147,9 @@ public partial class MainWindow : Window
             if (_matches.Count == 0) throw new InvalidOperationException("Matches not loaded.");
             if (SeasonCombo.SelectedItem is not string season) throw new InvalidOperationException("Select season.");
 
-            if (HomeTeamCombo.SelectedItem is not TeamRecord home)
+            if (HomeTeamCombo.SelectedItem is not TeamViewModel home)
                 throw new InvalidOperationException("Select Home team.");
-            if (AwayTeamCombo.SelectedItem is not TeamRecord away)
+            if (AwayTeamCombo.SelectedItem is not TeamViewModel away)
                 throw new InvalidOperationException("Select Away team.");
 
             if (home.TeamApiId == away.TeamApiId)
@@ -118,17 +168,22 @@ public partial class MainWindow : Window
             PredictedLabelText.Text = MatchResultHelpers.ToUiText(label);
             PredictedDetailsText.Text = $"{home.TeamLongName} vs {away.TeamLongName} • Season {season} • LeagueId={features.LeagueId}";
 
+            float confPct = 0f;
             if (pred.Score is { Length: > 0 })
             {
                 var p = MathHelpers.Softmax(pred.Score); // [Away, Draw, Home]
-                AwayBar.Value = p[0];
-                DrawBar.Value = p[1];
-                HomeBar.Value = p[2];
+                AwayBar.Value = 0;
+                DrawBar.Value = 0;
+                HomeBar.Value = 0;
+                AnimateBar(AwayBar, p[0], 0.0);
+                AnimateBar(DrawBar, p[1], 0.15);
+                AnimateBar(HomeBar, p[2], 0.3);
 
                 AwayPct.Text = $"{p[0] * 100:0.0}%";
                 DrawPct.Text = $"{p[1] * 100:0.0}%";
                 HomePct.Text = $"{p[2] * 100:0.0}%";
-                ConfidenceText.Text = $"{p[label] * 100:0.0}%";
+                confPct = p[label] * 100f;
+                ConfidenceText.Text = $"{confPct:0.0}%";
 
                 HighlightWinningBar(label);
             }
@@ -138,7 +193,9 @@ public partial class MainWindow : Window
                 AwayPct.Text = DrawPct.Text = HomePct.Text = ConfidenceText.Text = string.Empty;
             }
 
-            if (IncludeFeatureSummary.IsChecked == true)
+            AddToHistory(home.TeamLongName, away.TeamLongName, season, label, confPct);
+
+            if (true)
             {
                 FeaturesDebug.Text =
                     $"{"Metric",-22} {"Home",10} {"Away",10} {"Diff",10}\n" +
@@ -203,6 +260,19 @@ public partial class MainWindow : Window
         }
     }
 
+    private void AnimateBar(System.Windows.Controls.ProgressBar bar, double targetValue, double delaySeconds)
+    {
+        var animation = new DoubleAnimation
+        {
+            From = 0,
+            To = targetValue,
+            Duration = TimeSpan.FromMilliseconds(600),
+            BeginTime = TimeSpan.FromSeconds(delaySeconds),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        bar.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, animation);
+    }
+
     private void ClearBtn_Click(object sender, RoutedEventArgs e)
     {
         SeasonCombo.SelectedIndex = -1;
@@ -212,6 +282,9 @@ public partial class MainWindow : Window
         PredictedLabelText.Text = "—";
         PredictedDetailsText.Text = string.Empty;
         ConfidenceText.Text = string.Empty;
+        AwayBar.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, null);
+        DrawBar.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, null);
+        HomeBar.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, null);
         AwayBar.Value = 0;
         AwayPct.Text = string.Empty;
         DrawBar.Value = 0;
@@ -239,11 +312,6 @@ public partial class MainWindow : Window
             dir = dir.Parent;
         }
         return Directory.GetCurrentDirectory();
-    }
-
-    private void IncludeFeatureSummary_Checked(object sender, RoutedEventArgs e)
-    {
-
     }
 
     private void SeasonCombo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

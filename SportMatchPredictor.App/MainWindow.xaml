@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:converters="clr-namespace:SportMatchPredictor.App.Converters"
         Title="SportMatchPredictor"
         Width="1180"
         Height="760"
@@ -12,6 +13,48 @@
         TextElement.FontSize="14"
         Background="{DynamicResource MaterialDesignBackground}"
         FontFamily="{materialDesign:MaterialDesignFont}">
+
+    <Window.Resources>
+        <converters:PathToImageSourceConverter x:Key="PathToImageSourceConverter"/>
+        <DataTemplate x:Key="TeamItemTemplate">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Grid Width="24" Height="24" Margin="0,0,8,0">
+                    <Border CornerRadius="12"
+                            Background="{DynamicResource PrimaryHueLightBrush}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding LogoPath}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding TeamShortName}"
+                                   FontSize="7" FontWeight="Bold"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                    <Image RenderOptions.BitmapScalingMode="HighQuality">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Setter Property="Source"
+                                        Value="{Binding LogoPath, Converter={StaticResource PathToImageSourceConverter}}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding LogoPath}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
+                </Grid>
+                <TextBlock Text="{Binding TeamLongName}" VerticalAlignment="Center"/>
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -55,7 +98,7 @@
                                                  Foreground="White"
                                                  VerticalAlignment="Center"
                                                  Margin="0,0,7,0"/>
-                        <TextBlock Text="model.zip  ·  .NET 8  ·  ML.NET"
+                        <TextBlock Text="model.zip"
                                    Foreground="White"
                                    Opacity="0.9"
                                    FontSize="12"
@@ -131,6 +174,8 @@
                         <ComboBox x:Name="HomeTeamCombo"
                                   Style="{StaticResource SelectionComboBoxStyle}"
                                   IsEditable="True"
+                                  TextSearch.TextPath="TeamLongName"
+                                  ItemTemplate="{StaticResource TeamItemTemplate}"
                                   materialDesign:HintAssist.Hint="Select home team"
                                   Margin="0,0,0,0"/>
 
@@ -166,6 +211,8 @@
                         <ComboBox x:Name="AwayTeamCombo"
                                   Style="{StaticResource SelectionComboBoxStyle}"
                                   IsEditable="True"
+                                  TextSearch.TextPath="TeamLongName"
+                                  ItemTemplate="{StaticResource TeamItemTemplate}"
                                   materialDesign:HintAssist.Hint="Select away team"
                                   Margin="0,0,0,24"/>
 
@@ -197,30 +244,49 @@
                                 materialDesign:ButtonAssist.CornerRadius="8"
                                 materialDesign:ElevationAssist.Elevation="Dp0"/>
 
+                        <!-- Recent Predictions History -->
+                        <TextBlock Text="RECENT PREDICTIONS"
+                                   FontSize="10" FontWeight="Medium"
+                                   Opacity="0.5" Margin="0,16,0,6"/>
+                        <ListBox x:Name="HistoryList"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 FontSize="11"
+                                 Padding="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}"
+                                               FontSize="11"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding}"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </StackPanel>
 
-                    <!-- Options footer -->
+                    <!-- Branding footer -->
                     <Border Grid.Row="2"
                             CornerRadius="0,0,12,12"
                             Background="{DynamicResource MaterialDesignToolBarBackground}"
                             BorderBrush="{DynamicResource MaterialDesignDivider}"
                             BorderThickness="0,1,0,0"
                             Padding="22,14">
-                        <StackPanel>
-                            <TextBlock Text="OPTIONS"
-                                       FontSize="10" FontWeight="Medium"
-                                       Opacity="0.45" Margin="0,0,0,10"/>
-                            <CheckBox x:Name="IncludeFeatureSummary"
-                                      Content="Show feature summary after prediction"
-                                      IsChecked="True"
-                                      VerticalContentAlignment="Center"
-                                      Style="{StaticResource OptionCheckBoxStyle}"
-                                      Margin="0,0,0,6"
-                                      Checked="IncludeFeatureSummary_Checked"/>
-                            <CheckBox x:Name="UseTimeAwareFeatures"
-                                      Content="Use time-aware feature computation"
-                                      IsChecked="True"
-                                      Style="{StaticResource OptionCheckBoxStyle}"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <materialDesign:PackIcon Kind="Soccer"
+                                                     Width="20" Height="20"
+                                                     Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                     VerticalAlignment="Center"
+                                                     Margin="0,0,12,0"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Sport Match Predictor"
+                                           FontSize="14" FontWeight="Bold"
+                                           Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                <TextBlock Text="v1.0  ·  Diploma project"
+                                           FontSize="11" Opacity="0.5" Margin="0,2,0,0"/>
+                                <TextBlock Text="ML.NET  ·  .NET 8  ·  OVA + FastTree"
+                                           FontSize="11" Opacity="0.5" Margin="0,1,0,0"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
@@ -690,11 +756,6 @@
                                FontSize="12" Opacity="0.6"
                                VerticalAlignment="Center"/>
                 </StackPanel>
-                <TextBlock Text="SportMatchPredictor  ·  .NET 8  ·  ML.NET  ·  OVA + FastTree"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Center"
-                           FontSize="11"
-                           Opacity="0.35"/>
             </Grid>
         </Border>
 

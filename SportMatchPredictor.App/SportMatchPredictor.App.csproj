@@ -28,4 +28,10 @@
     <ProjectReference Include="..\SportMatchPredictor.ML\SportMatchPredictor.ML.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="keys.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
