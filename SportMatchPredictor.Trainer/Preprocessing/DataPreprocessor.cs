@@ -6,13 +6,13 @@ namespace SportMatchPredictor.Trainer.Preprocessing;
 
 public static class DataPreprocessor
 {
-    // Сколько последних матчей учитывать для "формы"
+    // Number of recent matches to consider for form
     private const int Window = 5;
 
-    // Минимум матчей в истории команды, чтобы строить признаки
+    // Minimum number of matches required to compute features
     private const int MinHistory = 5;
 
-    // Сырые данные матча (нужно, чтобы отсортировать по времени)
+    // Raw match record, sorted by date
     private sealed record RawMatch(
         DateTime Date,
         int HomeId,
@@ -34,7 +34,7 @@ public static class DataPreprocessor
         var matchPath = Path.Combine(rawDir, "Match.csv");
 
         if (!File.Exists(matchPath))
-            throw new FileNotFoundException($"Не найден файл: {matchPath}");
+            throw new FileNotFoundException($"File not found: {matchPath}");
 
         var outPath = Path.Combine(processedDir, "dataset.csv");
 
@@ -42,8 +42,8 @@ public static class DataPreprocessor
         {
             Delimiter = ",",
             HasHeaderRecord = true,
-            BadDataFound = null,          // не падаем на странных данных
-            MissingFieldFound = null,     // не падаем на пропусках
+            BadDataFound = null,
+            MissingFieldFound = null,
             HeaderValidated = null,
             IgnoreBlankLines = true,
             DetectColumnCountChanges = false
@@ -52,7 +52,7 @@ public static class DataPreprocessor
         int written = 0;
         int skipped = 0;
 
-        // 1) Считываем все матчи в список
+        // 1) Load all matches into a list
         List<RawMatch> matches = new(capacity: 250_000);
 
         using (var reader = new StreamReader(matchPath))
@@ -72,7 +72,6 @@ public static class DataPreprocessor
 
             while (csv.Read())
             {
-                // Достаём нужные поля безопасно (string может быть пустым)
                 var dateStr = csv.GetField(idxDate);
                 var homeStr = csv.GetField(idxHome);
                 var awayStr = csv.GetField(idxAway);
@@ -81,7 +80,7 @@ public static class DataPreprocessor
                 var leagueStr = csv.GetField(idxLeague);
                 var seasonStr = csv.GetField(idxSeason);
 
-                // Базовые проверки на пустые значения
+                // Validate required fields
                 if (!TryParseInt(homeStr, out int homeId) ||
                     !TryParseInt(awayStr, out int awayId) ||
                     !TryParseInt(hgStr, out int homeGoals) ||
@@ -111,16 +110,16 @@ public static class DataPreprocessor
             }
         }
 
-        // 2) Сортируем по дате (критично для корректной "истории")
+        // 2) Sort by date — critical for correct history tracking
         matches.Sort((a, b) => a.Date.CompareTo(b.Date));
 
-        // 3) История команд: последние N матчей (очки, голы)
+        // 3) Team history: last N matches (points, goals)
         var history = new Dictionary<int, Queue<MatchStats>>();
 
-        // 4) Пишем итоговый датасет
+        // 4) Write the output dataset
         using var outWriter = new StreamWriter(outPath);
 
-        // Финальный датасет (только числовые признаки + label)
+        // Header: numeric features + label
         outWriter.WriteLine(string.Join(',',
             "LeagueId",
             "Season",
@@ -152,11 +151,11 @@ public static class DataPreprocessor
             EnsureTeam(history, homeId);
             EnsureTeam(history, awayId);
 
-            // Признаки считаем ТОЛЬКО из истории ДО текущего матча
+            // Features are computed using history BEFORE the current match
             var homeHist = history[homeId];
             var awayHist = history[awayId];
 
-            // Требуем минимальную историю у обеих команд, иначе признаки будут мусорные
+            // Both teams must have enough history; otherwise features would be noise
             if (homeHist.Count < MinHistory || awayHist.Count < MinHistory)
             {
                 // После этого матча историю всё равно обновим
@@ -174,9 +173,8 @@ public static class DataPreprocessor
             var winRateDiff = hf.WinRate - af.WinRate;
             var goalDiffDiff = (hf.AvgGoalsFor - hf.AvgGoalsAgainst) - (af.AvgGoalsFor - af.AvgGoalsAgainst);
 
-            int label = GetLabel(homeGoals, awayGoals); // 0/1/2
+            int label = GetLabel(homeGoals, awayGoals); // 0=AwayWin, 1=Draw, 2=HomeWin
 
-            // Пишем строку
             outWriter.WriteLine(string.Join(',',
                 leagueId.ToString(CultureInfo.InvariantCulture),
                 EscapeSeason(seasonStr),
@@ -198,7 +196,7 @@ public static class DataPreprocessor
 
             written++;
 
-            // После вычисления признаков обновляем историю текущим матчем
+            // Update history with the current match result
             UpdateHistory(history, homeId, awayId, homeGoals, awayGoals);
         }
 
@@ -262,7 +260,7 @@ public static class DataPreprocessor
             if (string.Equals(header[i], name, StringComparison.OrdinalIgnoreCase))
                 return i;
         }
-        throw new InvalidOperationException($"Колонка '{name}' не найдена в CSV заголовке.");
+        throw new InvalidOperationException($"Column '{name}' not found in CSV header.");
     }
 
     private static bool TryParseInt(string? s, out int value)
@@ -270,8 +268,7 @@ public static class DataPreprocessor
 
     private static string EscapeSeason(string season)
     {
-        // season выглядит как "2008/2009" — оставим как текст (без запятых), в CSV это ок
-        // но ML.NET проще если это будет категориальная строка или мы позже уберём сезон.
+        // Season looks like "2008/2009" — no commas, safe as a CSV text field
         return season.Replace(',', '_');
     }
 

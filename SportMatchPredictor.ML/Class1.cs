@@ -1,7 +1,5 @@
-﻿namespace SportMatchPredictor.ML
-{
-    public class Class1
-    {
+﻿namespace SportMatchPredictor.ML;
 
-    }
+public class Class1
+{
 }

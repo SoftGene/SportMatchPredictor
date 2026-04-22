@@ -22,8 +22,6 @@ namespace SportMatchPredictor.App
                 MessageBox.Show(ex.Exception.ToString(), "Startup Error");
                 ex.Handled = true;
             };
-
-
         }
     }
 }

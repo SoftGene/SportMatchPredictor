@@ -1,4 +1,4 @@
-﻿<Application x:Class="SportMatchPredictor.App.App"
+<Application x:Class="SportMatchPredictor.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
@@ -7,13 +7,13 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
 
-                <!-- Material Design — правильные словари для v4.x -->
+                <!-- Material Design theme dictionaries -->
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Light.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml"/>
 
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- ─── Цветовая палитра (зелёная) ─── -->
+            <!-- ─── Color palette (green) ─── -->
             <SolidColorBrush x:Key="PrimaryHueLightBrush"              Color="#B1D18A"/>
             <SolidColorBrush x:Key="PrimaryHueMidBrush"                Color="#4C662B"/>
             <SolidColorBrush x:Key="PrimaryHueDarkBrush"               Color="#394E1F"/>
@@ -22,11 +22,11 @@
             <SolidColorBrush x:Key="PrimaryHueMidForegroundBrush"      Color="#FFFFFF"/>
             <SolidColorBrush x:Key="PrimaryHueDarkForegroundBrush"     Color="#FFFFFF"/>
 
-            <!-- Secondary / accent не используется активно, задаём нейтральным -->
+            <!-- Secondary / accent is not actively used, set to neutral -->
             <SolidColorBrush x:Key="SecondaryHueMidBrush"              Color="#DDE8CB"/>
             <SolidColorBrush x:Key="SecondaryHueMidForegroundBrush"    Color="#102000"/>
 
-            <!-- ─── Поверхности и фон ─── -->
+            <!-- ─── Surfaces and background ─── -->
             <SolidColorBrush x:Key="MaterialDesignBackground"          Color="#F7F8F2"/>
             <SolidColorBrush x:Key="MaterialDesignPaper"               Color="#FFFFFF"/>
             <SolidColorBrush x:Key="MaterialDesignCardBackground"      Color="#FFFFFF"/>
@@ -36,7 +36,7 @@
             <SolidColorBrush x:Key="MaterialDesignBodyLight"           Color="#5F6656"/>
             <SolidColorBrush x:Key="MaterialDesignCheckBoxOff"         Color="#6B7261"/>
 
-            <!-- ─── Вспомогательные кисти ─── -->
+            <!-- ─── Utility brushes ─── -->
             <SolidColorBrush x:Key="AppOutlineBrush"                   Color="#C5CCB8"/>
             <SolidColorBrush x:Key="SuccessBrush"                      Color="#66BB6A"/>
             <SolidColorBrush x:Key="WarnBrush"                         Color="#FFA726"/>
@@ -45,26 +45,25 @@
             <SolidColorBrush x:Key="SuccessSurfaceBrush"               Color="#E8F4E5"/>
             <SolidColorBrush x:Key="WarnSurfaceBrush"                  Color="#FFF2E1"/>
             <SolidColorBrush x:Key="DangerSurfaceBrush"                Color="#FCE7E5"/>
-            <SolidColorBrush x:Key="SecondaryAccentBrush" Color="#DDE8CB"/>
-
-            <SolidColorBrush x:Key="CardSurfaceBrush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="SecondaryAccentBrush"              Color="#DDE8CB"/>
+            <SolidColorBrush x:Key="CardSurfaceBrush"                  Color="#FFFFFF"/>
 
             <Style TargetType="materialDesign:Card">
                 <Setter Property="Background" Value="{DynamicResource CardSurfaceBrush}"/>
             </Style>
 
-            <!-- ─── Стиль окна ─── -->
+            <!-- ─── Window style ─── -->
             <Style TargetType="Window">
-                <Setter Property="Background"              Value="{DynamicResource MaterialDesignBackground}"/>
-                <Setter Property="TextElement.Foreground"  Value="{DynamicResource MaterialDesignBody}"/>
-                <Setter Property="FontFamily"              Value="{materialDesign:MaterialDesignFont}"/>
+                <Setter Property="Background"             Value="{DynamicResource MaterialDesignBackground}"/>
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontFamily"             Value="{materialDesign:MaterialDesignFont}"/>
             </Style>
 
             <Style x:Key="OptionCheckBoxStyle" TargetType="CheckBox">
-                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
-                <Setter Property="FontSize" Value="12.5"/>
-                <Setter Property="VerticalContentAlignment" Value="Center"/>
-                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Foreground"                Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="FontSize"                  Value="12.5"/>
+                <Setter Property="VerticalContentAlignment"  Value="Center"/>
+                <Setter Property="Cursor"                    Value="Hand"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="CheckBox">
@@ -107,12 +106,12 @@
 
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
-                                    <Setter TargetName="CheckBorder" Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
-                                    <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
-                                    <Setter TargetName="CheckGlyph" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="CheckBorder" Property="Background"   Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                    <Setter TargetName="CheckBorder" Property="BorderBrush"  Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                    <Setter TargetName="CheckGlyph"  Property="Visibility"   Value="Visible"/>
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                    <Setter TargetName="CheckBorder" Property="BorderBrush"  Value="{DynamicResource PrimaryHueMidBrush}"/>
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Opacity" Value="0.5"/>
@@ -124,26 +123,26 @@
             </Style>
 
             <Style x:Key="SelectionComboBoxStyle"
-       TargetType="ComboBox"
-       BasedOn="{StaticResource MaterialDesignOutlinedComboBox}">
-                <Setter Property="Height"                              Value="48"/>
-                <Setter Property="MinHeight"                           Value="48"/>
-                <Setter Property="Padding"                             Value="14,12,34,12"/>
-                <Setter Property="Background"                          Value="{DynamicResource MaterialDesignPaper}"/>
-                <Setter Property="BorderBrush"                         Value="{DynamicResource AppOutlineBrush}"/>
-                <Setter Property="BorderThickness"                     Value="1.5"/>
-                <Setter Property="Foreground"                          Value="{DynamicResource MaterialDesignBody}"/>
-                <Setter Property="VerticalContentAlignment"            Value="Center"/>
+                   TargetType="ComboBox"
+                   BasedOn="{StaticResource MaterialDesignOutlinedComboBox}">
+                <Setter Property="Height"                               Value="48"/>
+                <Setter Property="MinHeight"                            Value="48"/>
+                <Setter Property="Padding"                              Value="14,12,34,12"/>
+                <Setter Property="Background"                           Value="{DynamicResource MaterialDesignPaper}"/>
+                <Setter Property="BorderBrush"                          Value="{DynamicResource AppOutlineBrush}"/>
+                <Setter Property="BorderThickness"                      Value="1.5"/>
+                <Setter Property="Foreground"                           Value="{DynamicResource MaterialDesignBody}"/>
+                <Setter Property="VerticalContentAlignment"             Value="Center"/>
                 <Setter Property="materialDesign:HintAssist.IsFloating" Value="False"/>
                 <Setter Property="materialDesign:HintAssist.Foreground" Value="{DynamicResource MaterialDesignBodyLight}"/>
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
-                        <Setter Property="BorderThickness" Value="1.5"/>
+                        <Setter Property="BorderBrush"     Value="{DynamicResource PrimaryHueMidBrush}"/>
+                        <Setter Property="BorderThickness"  Value="1.5"/>
                     </Trigger>
                     <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
-                        <Setter Property="BorderThickness" Value="1.5"/>
+                        <Setter Property="BorderBrush"     Value="{DynamicResource PrimaryHueMidBrush}"/>
+                        <Setter Property="BorderThickness"  Value="1.5"/>
                     </Trigger>
                 </Style.Triggers>
             </Style>
@@ -153,12 +152,12 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="ToolTip">
                             <Border Background="{DynamicResource MaterialDesignPaper}"
-                        BorderBrush="{DynamicResource MaterialDesignDivider}"
-                        BorderThickness="1"
-                        CornerRadius="6"
-                        Padding="10,6">
+                                    BorderBrush="{DynamicResource MaterialDesignDivider}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6">
                                 <TextBlock Text="{TemplateBinding Content}"
-                               FontSize="12"/>
+                                           FontSize="12"/>
                             </Border>
                         </ControlTemplate>
                     </Setter.Value>

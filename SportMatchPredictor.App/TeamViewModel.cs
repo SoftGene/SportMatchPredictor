@@ -1,5 +1,5 @@
-using SportMatchPredictor.ML.Services;
 using System.ComponentModel;
+using SportMatchPredictor.ML.Services;
 
 namespace SportMatchPredictor.App;
 
@@ -27,4 +27,6 @@ public sealed class TeamViewModel : INotifyPropertyChanged
     public TeamViewModel(TeamRecord record) => Record = record;
 
     public override string ToString() => Record.TeamLongName;
+
+    public string Initial => TeamShortName.Length > 0 ? TeamShortName[0].ToString() : "?";
 }

@@ -1,12 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Globalization;
-using System.Collections.Generic;
 using Microsoft.ML;
 using Microsoft.ML.Data;
-using SportMatchPredictor.ML.Data;
 using SportMatchPredictor.ML;
+using SportMatchPredictor.ML.Data;
 
 namespace SportMatchPredictor.Trainer.Training;
 
@@ -78,7 +78,7 @@ public static class ModelTrainer
             ))
             .Append(ml.Transforms.NormalizeMinMax("Features"));
 
-        // 4) Конфиги FastTree
+        // 4) FastTree configurations
         var configs = new[]
         {
             new FastTreeCfg("FT-1 (32/300/20)", 32, 300, 20),
@@ -145,7 +145,7 @@ public static class ModelTrainer
         var sample = new MatchData
         {
             LeagueId = 1729,
-            Season = testSeason, // просто как поле данных; в Features мы Season не используем
+            Season = testSeason, // data field only; Season is not used in Features
 
             HomeAvgGoalsFor = 1.6f,
             HomeAvgGoalsAgainst = 1.0f,
@@ -163,13 +163,12 @@ public static class ModelTrainer
             WinRateDiff = 0.55f - 0.35f,
             GoalDiffDiff = (1.6f - 1.0f) - (1.2f - 1.4f),
 
-            Result = 0 // не важен для Predict
+            Result = 0 // unused for prediction
         };
 
         var pred = engine.Predict(sample);
 
-        // Точный маппинг из DataPreprocessor:
-        // 0=AwayWin, 1=Draw, 2=HomeWin
+        // Mapping from DataPreprocessor: 0=AwayWin, 1=Draw, 2=HomeWin
         Console.WriteLine($"Sample predicted result: {pred.PredictedResult} (0=Away,1=Draw,2=Home)");
 
         try
@@ -185,7 +184,7 @@ public static class ModelTrainer
         {
             Console.WriteLine($"Scores: {string.Join(", ", pred.Score.Select(s => s.ToString("0.000", CultureInfo.InvariantCulture)))}");
 
-            // Softmax => псевдо-вероятности (удобно для WPF UI)
+            // Softmax => pseudo-probabilities (convenient for the WPF UI)
             try
             {
                 var p = MathHelpers.Softmax(pred.Score);
@@ -216,12 +215,12 @@ public static class ModelTrainer
 
     private static void EvaluateBaselines(IReadOnlyList<MatchData> train, IReadOnlyList<MatchData> test)
     {
-        // Baseline 1: всегда HomeWin (2)
+        // Baseline 1: always predict HomeWin (2)
         var alwaysHomeAcc = test.Count == 0
             ? 0
             : test.Count(r => (int)r.Result == 2) / (double)test.Count;
 
-        // Baseline 2: самый частый класс в train
+        // Baseline 2: most frequent class in the training set
         int mostFrequent = train.Count == 0
             ? 2
             : train

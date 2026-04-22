@@ -4,7 +4,7 @@ namespace SportMatchPredictor.ML.Services;
 
 public static class FeatureBuilder
 {
-    // Должно совпадать с тем, что было в DataPreprocessor
+    // Must match the constants used in DataPreprocessor
     private const int Window = 5;
     private const int MinHistory = 5;
 
@@ -31,7 +31,7 @@ public static class FeatureBuilder
         var hf = ComputeFeatures(homeHist);
         var af = ComputeFeatures(awayHist);
 
-        // diff
+        // compute differentials
         var avgGoalsForDiff = hf.AvgGoalsFor - af.AvgGoalsFor;
         var avgGoalsAgainstDiff = hf.AvgGoalsAgainst - af.AvgGoalsAgainst;
         var pointsPerGameDiff = hf.PointsPerGame - af.PointsPerGame;
@@ -61,13 +61,13 @@ public static class FeatureBuilder
             WinRateDiff = winRateDiff,
             GoalDiffDiff = goalDiffDiff,
 
-            Result = 0 // для Predict не важно
+            Result = 0 // unused for prediction
         };
     }
 
     private static int InferLeagueId(IReadOnlyList<RawMatchRecord> matches, int teamId, DateTime cutoff)
     {
-        // последние 30 матчей команды до cutoff
+        // last 30 matches for the team before the cutoff date
         var last = matches
             .Where(m => m.Date < cutoff && (m.HomeTeamApiId == teamId || m.AwayTeamApiId == teamId))
             .TakeLast(30)
@@ -76,7 +76,7 @@ public static class FeatureBuilder
         if (last.Count == 0)
             return 0;
 
-        // самая частая лига
+        // most common league
         return last
             .GroupBy(m => m.LeagueId)
             .OrderByDescending(g => g.Count())
@@ -89,7 +89,7 @@ public static class FeatureBuilder
             .Where(m => m.Date < cutoff && (m.HomeTeamApiId == teamId || m.AwayTeamApiId == teamId))
             .ToList();
 
-        // берем последние n
+        // take the last n matches
         var lastN = filtered.Count <= n ? filtered : filtered.GetRange(filtered.Count - n, n);
 
         var stats = new List<MatchStats>(lastN.Count);

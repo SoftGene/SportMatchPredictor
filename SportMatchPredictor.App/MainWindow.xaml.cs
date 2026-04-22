@@ -1,14 +1,15 @@
-﻿using SportMatchPredictor.ML;
-using SportMatchPredictor.ML.Data;
-using SportMatchPredictor.ML.Services;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using MaterialDesignThemes.Wpf;
 using System.Windows.Media.Imaging;
-using System.Threading.Tasks;
+using System.Windows.Threading;
+using MaterialDesignThemes.Wpf;
+using SportMatchPredictor.ML;
+using SportMatchPredictor.ML.Data;
+using SportMatchPredictor.ML.Services;
 
 namespace SportMatchPredictor.App;
 
@@ -18,43 +19,10 @@ public partial class MainWindow : Window
     private IReadOnlyList<RawMatchRecord> _matches = Array.Empty<RawMatchRecord>();
     private IReadOnlyList<string> _seasons = Array.Empty<string>();
     private bool _isDarkTheme = false;
-
     private ModelService? _model;
-
     private static readonly string ApiKey = LoadApiKey();
-
-    private static string LoadApiKey()
-    {
-        try
-        {
-            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keys.json");
-            if (!File.Exists(path)) return string.Empty;
-            var json = File.ReadAllText(path);
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-            return doc.RootElement.GetProperty("ApiKey").GetString() ?? string.Empty;
-        }
-        catch { return string.Empty; }
-    }
     private readonly Dictionary<int, string?> _logoCache = new();
-
-    private string? GetLogoPath(int teamApiId)
-        => _logoCache.TryGetValue(teamApiId, out var path) ? path : null;
-
     private readonly List<string> _history = new();
-
-    private void AddToHistory(string home, string away, string season, int label, float confPct)
-    {
-        var outcome = label switch { 0 => "Away Win", 1 => "Draw", 2 => "Home Win", _ => "?" };
-        var entry = $"{home} vs {away}  ·  {season}  ·  {outcome}  ·  {confPct:0.0}%";
-
-        if (_history.Contains(entry))
-            return;
-
-        _history.Insert(0, entry);
-        if (_history.Count > 5) _history.RemoveAt(5);
-        HistoryList.ItemsSource = null;
-        HistoryList.ItemsSource = _history;
-    }
 
     public MainWindow()
     {
@@ -113,34 +81,8 @@ public partial class MainWindow : Window
             StatusText.Text = "Startup error: " + ex.Message;
             MessageBox.Show(ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+
         ShowResult(false);
-    }
-
-    private async Task LoadLogosAsync(List<TeamViewModel> teams, string logosDir)
-    {
-        // Шаг 1 — мгновенно показываем все уже скачанные логотипы
-        foreach (var vm in teams)
-        {
-            var localPath = Path.Combine(logosDir, $"{vm.TeamApiId}.png");
-            if (File.Exists(localPath))
-            {
-                _logoCache[vm.TeamApiId] = localPath;
-                vm.LogoPath = localPath; // напрямую, без Dispatcher — мы уже в UI потоке
-            }
-        }
-
-        // Шаг 2 — в фоне докачиваем те у которых нет файла
-        var missing = teams.Where(t => !_logoCache.ContainsKey(t.TeamApiId)).ToList();
-        foreach (var vm in missing)
-        {
-            var path = await TeamLogoService.GetLogoPathAsync(
-                vm.TeamApiId, vm.TeamLongName, ApiKey, logosDir);
-            _logoCache[vm.TeamApiId] = path;
-            if (path is not null)
-                _ = Application.Current.Dispatcher.BeginInvoke(() => vm.LogoPath = path);
-
-            await Task.Delay(800);
-        }
     }
 
     private void ValidateSelection()
@@ -168,6 +110,11 @@ public partial class MainWindow : Window
             PredictBtn.IsEnabled = false;
             StatusText.Text = $"⚠ {ex.Message}";
         }
+    }
+
+    private void SeasonCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        ValidateSelection();
     }
 
     private void PredictBtn_Click(object sender, RoutedEventArgs e)
@@ -231,40 +178,33 @@ public partial class MainWindow : Window
 
             AddToHistory(home.TeamLongName, away.TeamLongName, season, label, confPct);
 
-            // Home Win (2) — HomeLogo слева, остальные скрыты
-            // Away Win (0) — AwayLogo слева, остальные скрыты  
-            // Draw (1)     — HomeLogo слева, AwayLogoRight справа
+            // HomeWin (2): HomeLogo left, others hidden
+            // AwayWin (0): AwayLogo left, others hidden
+            // Draw (1): HomeLogo left, AwayLogoRight right
             HomeLogo.Source = (label == 2 || label == 1) && home.LogoPath is not null
-                ? new System.Windows.Media.Imaging.BitmapImage(new Uri(home.LogoPath))
+                ? new BitmapImage(new Uri(home.LogoPath))
                 : null;
             AwayLogo.Source = label == 0 && away.LogoPath is not null
-                ? new System.Windows.Media.Imaging.BitmapImage(new Uri(away.LogoPath))
+                ? new BitmapImage(new Uri(away.LogoPath))
                 : null;
             AwayLogoRight.Source = label == 1 && away.LogoPath is not null
-                ? new System.Windows.Media.Imaging.BitmapImage(new Uri(away.LogoPath))
+                ? new BitmapImage(new Uri(away.LogoPath))
                 : null;
 
             HomeLogo.Visibility = HomeLogo.Source is not null ? Visibility.Visible : Visibility.Collapsed;
             AwayLogo.Visibility = AwayLogo.Source is not null ? Visibility.Visible : Visibility.Collapsed;
             AwayLogoRight.Visibility = AwayLogoRight.Source is not null ? Visibility.Visible : Visibility.Collapsed;
 
-            if (true)
+            FeaturesGrid.ItemsSource = new List<FeatureRow>
             {
-                FeaturesDebug.Text =
-                    $"{"Metric",-22} {"Home",10} {"Away",10} {"Diff",10}\n" +
-                    $"{new string('─', 54)}\n" +
-                    $"{"Avg Goals For",-22} {features.HomeAvgGoalsFor,10:0.###} {features.AwayAvgGoalsFor,10:0.###} {features.AvgGoalsForDiff,10:0.###}\n" +
-                    $"{"Avg Goals Against",-22} {features.HomeAvgGoalsAgainst,10:0.###} {features.AwayAvgGoalsAgainst,10:0.###} {features.AvgGoalsAgainstDiff,10:0.###}\n" +
-                    $"{"Points Per Game",-22} {features.HomePointsPerGame,10:0.###} {features.AwayPointsPerGame,10:0.###} {features.PointsPerGameDiff,10:0.###}\n" +
-                    $"{"Win Rate",-22} {features.HomeWinRate,10:0.###} {features.AwayWinRate,10:0.###} {features.WinRateDiff,10:0.###}\n" +
-                    $"{new string('─', 54)}\n" +
-                    $"{"LeagueId",-22} {features.LeagueId,10}\n" +
-                    $"{"GoalDiffDiff",-22} {features.GoalDiffDiff,10:0.###}";
-            }
-            else
-            {
-                FeaturesDebug.Text = string.Empty;
-            }
+                new() { Metric = "Avg Goals For",     Home = features.HomeAvgGoalsFor,     Away = features.AwayAvgGoalsFor,     Diff = features.AvgGoalsForDiff },
+                new() { Metric = "Avg Goals Against", Home = features.HomeAvgGoalsAgainst, Away = features.AwayAvgGoalsAgainst, Diff = features.AvgGoalsAgainstDiff },
+                new() { Metric = "Points Per Game",   Home = features.HomePointsPerGame,   Away = features.AwayPointsPerGame,   Diff = features.PointsPerGameDiff },
+                new() { Metric = "Win Rate",          Home = features.HomeWinRate,         Away = features.AwayWinRate,         Diff = features.WinRateDiff },
+                new() { Metric = "GoalDiff Diff",     Home = features.GoalDiffDiff,        Away = 0,                            Diff = features.GoalDiffDiff },
+                new() { Metric = "League Id",         Home = features.LeagueId,            Away = 0,                            Diff = 0 },
+            };
+            FeaturesDebug.Text = string.Empty;
 
             StatusText.Text = "Prediction done.";
         }
@@ -273,96 +213,10 @@ public partial class MainWindow : Window
             StatusText.Text = "Predict error: " + ex.Message;
             MessageBox.Show(ex.Message, "Predict error", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
-
-    }
-
-    private void HighlightWinningBar(int label)
-    {
-        // сбрасываем все три в обычное состояние
-        AwayBorder.BorderThickness = new Thickness(0);
-        DrawBorder.BorderThickness = new Thickness(0);
-        HomeBorder.BorderThickness = new Thickness(0);
-
-        AwayBorder.Opacity = 0.6;
-        DrawBorder.Opacity = 0.6;
-        HomeBorder.Opacity = 0.6;
-
-        // выделяем победителя
-        var winner = label switch
-        {
-            0 => AwayBorder,
-            1 => DrawBorder,
-            2 => HomeBorder,
-            _ => null
-        };
-
-        if (winner is not null)
-        {
-            winner.BorderThickness = new Thickness(2);
-            winner.BorderBrush = label switch
-            {
-                0 => new System.Windows.Media.SolidColorBrush(
-                         System.Windows.Media.Color.FromRgb(0xEF, 0x53, 0x50)),
-                1 => new System.Windows.Media.SolidColorBrush(
-                         System.Windows.Media.Color.FromRgb(0xFF, 0xA7, 0x26)),
-                2 => new System.Windows.Media.SolidColorBrush(
-                         System.Windows.Media.Color.FromRgb(0x66, 0xBB, 0x6A)),
-                _ => System.Windows.Media.Brushes.Transparent
-            };
-            winner.Opacity = 1.0;
-        }
-    }
-
-    private void AnimateBar(System.Windows.Controls.ProgressBar bar, double targetValue, double delaySeconds)
-    {
-        var animation = new DoubleAnimation
-        {
-            From = 0,
-            To = targetValue,
-            Duration = TimeSpan.FromMilliseconds(850),
-            BeginTime = TimeSpan.FromSeconds(delaySeconds),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        bar.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, animation);
-    }
-
-    private void AnimatePct(System.Windows.Controls.TextBlock textBlock, double targetPct, double delaySeconds)
-    {
-        var timer = new System.Windows.Threading.DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(16) // ~60fps
-        };
-
-        var startTime = DateTime.Now + TimeSpan.FromSeconds(delaySeconds);
-        var duration = TimeSpan.FromMilliseconds(850);
-
-        timer.Tick += (_, _) =>
-        {
-            var now = DateTime.Now;
-            if (now < startTime) return;
-
-            var elapsed = (now - startTime).TotalMilliseconds;
-            var progress = Math.Min(elapsed / duration.TotalMilliseconds, 1.0);
-
-            // EaseOut кубическая
-            var eased = 1 - Math.Pow(1 - progress, 3);
-            var current = targetPct * eased;
-
-            textBlock.Text = $"{current:0.0}%";
-
-            if (progress >= 1.0)
-            {
-                textBlock.Text = $"{targetPct:0.0}%";
-                timer.Stop();
-            }
-        };
-
-        timer.Start();
     }
 
     private async void ClearBtn_Click(object sender, RoutedEventArgs e)
     {
-
         if (HeroBlock.Visibility == Visibility.Visible)
         {
             var fadeOut = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(200))
@@ -383,9 +237,9 @@ public partial class MainWindow : Window
         PredictedLabelText.Text = "—";
         PredictedDetailsText.Text = string.Empty;
         ConfidenceText.Text = string.Empty;
-        AwayBar.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, null);
-        DrawBar.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, null);
-        HomeBar.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, null);
+        AwayBar.BeginAnimation(ProgressBar.ValueProperty, null);
+        DrawBar.BeginAnimation(ProgressBar.ValueProperty, null);
+        HomeBar.BeginAnimation(ProgressBar.ValueProperty, null);
         AwayBar.Value = 0;
         AwayPct.Text = string.Empty;
         DrawBar.Value = 0;
@@ -409,19 +263,6 @@ public partial class MainWindow : Window
         ShowResult(false);
     }
 
-    private static string FindSolutionRoot(string appBaseDir)
-    {
-        var dir = new DirectoryInfo(appBaseDir);
-        for (int i = 0; i < 6 && dir != null; i++)
-        {
-            var candidate = Path.Combine(dir.FullName, "data", "raw", "Match.csv");
-            if (File.Exists(candidate))
-                return dir.FullName;
-            dir = dir.Parent;
-        }
-        return Directory.GetCurrentDirectory();
-    }
-
     private void SwapBtn_Click(object sender, RoutedEventArgs e)
     {
         var home = HomeTeamCombo.SelectedItem;
@@ -430,75 +271,12 @@ public partial class MainWindow : Window
         AwayTeamCombo.SelectedItem = home;
     }
 
-    private void ShowResult(bool show)
-    {
-        EmptyState.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
-        ResultHeader.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-        ResultScrollViewer.VerticalScrollBarVisibility =
-            show ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
-
-        if (show)
-        {
-            // сначала скрываем и сбрасываем
-            HeroBlock.Visibility = Visibility.Collapsed;
-            ProbabilityBlock.Visibility = Visibility.Collapsed;
-            TabBlock.Visibility = Visibility.Collapsed;
-            HeroBlock.Opacity = 0;
-            ProbabilityBlock.Opacity = 0;
-            TabBlock.Opacity = 0;
-
-            // небольшая задержка чтобы UI успел обновиться
-            Dispatcher.InvokeAsync(() =>
-            {
-                HeroBlock.Visibility = Visibility.Visible;
-                ProbabilityBlock.Visibility = Visibility.Visible;
-                TabBlock.Visibility = Visibility.Visible;
-
-                AnimateBlockIn(HeroBlock, 0);
-                AnimateBlockIn(ProbabilityBlock, 120);
-                AnimateBlockIn(TabBlock, 240);
-            }, System.Windows.Threading.DispatcherPriority.Render);
-        }
-        else
-        {
-            HeroBlock.Visibility = Visibility.Collapsed;
-            ProbabilityBlock.Visibility = Visibility.Collapsed;
-            TabBlock.Visibility = Visibility.Collapsed;
-        }
-    }
-
-    private void AnimateBlockIn(UIElement element, double delayMs)
-    {
-        // сбрасываем трансформацию
-        var translate = new TranslateTransform { Y = 24 };
-        element.RenderTransform = translate;
-        element.Opacity = 0;
-
-        // анимация Opacity
-        var opacityAnim = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(500))
-        {
-            BeginTime = TimeSpan.FromMilliseconds(delayMs),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-
-        // анимация движения снизу вверх
-        var translateAnim = new DoubleAnimation(24, 0, TimeSpan.FromMilliseconds(500))
-        {
-            BeginTime = TimeSpan.FromMilliseconds(delayMs),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-
-        element.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
-        translate.BeginAnimation(TranslateTransform.YProperty, translateAnim);
-    }
-
     private void RandomBtn_Click(object sender, RoutedEventArgs e)
     {
         if (_teams.Count < 2 || _seasons.Count == 0) return;
 
         var rnd = new Random();
 
-        // пробуем несколько раз найти валидную комбинацию
         for (int attempt = 0; attempt < 50; attempt++)
         {
             var season = _seasons[rnd.Next(_seasons.Count)];
@@ -509,21 +287,18 @@ public partial class MainWindow : Window
 
             try
             {
-                // проверяем что FeatureBuilder не бросит исключение
                 FeatureBuilder.BuildFeatures(_matches, home.TeamApiId, away.TeamApiId, season);
 
-                // нашли валидную комбинацию — применяем
                 SeasonCombo.SelectedItem = season;
                 HomeTeamCombo.SelectedItem = home;
                 AwayTeamCombo.SelectedItem = away;
 
                 Dispatcher.InvokeAsync(() => PredictBtn_Click(this, new RoutedEventArgs()),
-                    System.Windows.Threading.DispatcherPriority.Background);
+                    DispatcherPriority.Background);
                 return;
             }
             catch
             {
-                // эта комбинация не подходит — пробуем следующую
                 continue;
             }
         }
@@ -549,7 +324,7 @@ public partial class MainWindow : Window
 
     private void ThemeToggleBtn_Click(object sender, RoutedEventArgs e)
     {
-        // 1. Скриншот текущего состояния
+        // 1. Capture a screenshot of the current state
         var bmp = new RenderTargetBitmap(
             (int)ActualWidth, (int)ActualHeight, 96, 96, PixelFormats.Pbgra32);
         bmp.Render(this);
@@ -562,12 +337,12 @@ public partial class MainWindow : Window
             IsHitTestVisible = false
         };
 
-        System.Windows.Controls.Grid.SetRowSpan(overlay, 3);
+        Grid.SetRowSpan(overlay, 3);
 
-        // 2. Кладём поверх интерфейса
+        // 2. Place the screenshot overlay on top
         RootGrid.Children.Add(overlay);
 
-        // 3. Меняем тему
+        // 3. Switch the theme
         _isDarkTheme = !_isDarkTheme;
         ThemeIcon.Kind = _isDarkTheme ? PackIconKind.WeatherSunny : PackIconKind.WeatherNight;
 
@@ -623,17 +398,229 @@ public partial class MainWindow : Window
             res["MaterialDesignCheckBoxOff"] = Brush("#6B7261");
         }
 
-        // 4. Плавно растворяем скриншот
+        // 4. Fade out the screenshot overlay
         var anim = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(350));
         anim.Completed += (_, _) => RootGrid.Children.Remove(overlay);
         overlay.BeginAnimation(UIElement.OpacityProperty, anim);
     }
 
-    private static System.Windows.Media.SolidColorBrush Brush(string hex)
-        => new((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex));
-
-    private void SeasonCombo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private async Task LoadLogosAsync(List<TeamViewModel> teams, string logosDir)
     {
-        ValidateSelection();
+        // Step 1 — immediately show already-downloaded logos
+        foreach (var vm in teams)
+        {
+            var localPath = Path.Combine(logosDir, $"{vm.TeamApiId}.png");
+            if (File.Exists(localPath))
+            {
+                _logoCache[vm.TeamApiId] = localPath;
+                vm.LogoPath = localPath; // direct assignment — already on the UI thread
+            }
+        }
+
+        // Step 2 — download missing logos in the background
+        var missing = teams.Where(t => !_logoCache.ContainsKey(t.TeamApiId)).ToList();
+        foreach (var vm in missing)
+        {
+            var path = await TeamLogoService.GetLogoPathAsync(
+                vm.TeamApiId, vm.TeamLongName, ApiKey, logosDir);
+            _logoCache[vm.TeamApiId] = path;
+            if (path is not null)
+                _ = Application.Current.Dispatcher.BeginInvoke(() => vm.LogoPath = path);
+
+            await Task.Delay(800);
+        }
+    }
+
+    private void AddToHistory(string home, string away, string season, int label, float confPct)
+    {
+        var outcome = label switch { 0 => "Away Win", 1 => "Draw", 2 => "Home Win", _ => "?" };
+        var entry = $"{home} vs {away}  ·  {season}  ·  {outcome}  ·  {confPct:0.0}%";
+
+        if (_history.Contains(entry))
+            return;
+
+        _history.Insert(0, entry);
+        if (_history.Count > 5) _history.RemoveAt(5);
+        HistoryList.ItemsSource = null;
+        HistoryList.ItemsSource = _history;
+    }
+
+    private void ShowResult(bool show)
+    {
+        EmptyState.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
+        ResultHeader.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        ResultScrollViewer.VerticalScrollBarVisibility =
+            show ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+
+        if (show)
+        {
+            HeroBlock.Visibility = Visibility.Collapsed;
+            ProbabilityBlock.Visibility = Visibility.Collapsed;
+            TabBlock.Visibility = Visibility.Collapsed;
+            HeroBlock.Opacity = 0;
+            ProbabilityBlock.Opacity = 0;
+            TabBlock.Opacity = 0;
+
+            // Small delay to allow the UI layout to update before animating
+            Dispatcher.InvokeAsync(() =>
+            {
+                HeroBlock.Visibility = Visibility.Visible;
+                ProbabilityBlock.Visibility = Visibility.Visible;
+                TabBlock.Visibility = Visibility.Visible;
+
+                AnimateBlockIn(HeroBlock, 0);
+                AnimateBlockIn(ProbabilityBlock, 120);
+                AnimateBlockIn(TabBlock, 240);
+            }, DispatcherPriority.Render);
+        }
+        else
+        {
+            HeroBlock.Visibility = Visibility.Collapsed;
+            ProbabilityBlock.Visibility = Visibility.Collapsed;
+            TabBlock.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void HighlightWinningBar(int label)
+    {
+        // Reset all three to default state
+        AwayBorder.BorderThickness = new Thickness(0);
+        DrawBorder.BorderThickness = new Thickness(0);
+        HomeBorder.BorderThickness = new Thickness(0);
+
+        AwayBorder.Opacity = 0.6;
+        DrawBorder.Opacity = 0.6;
+        HomeBorder.Opacity = 0.6;
+
+        // Highlight the winner
+        var winner = label switch
+        {
+            0 => AwayBorder,
+            1 => DrawBorder,
+            2 => HomeBorder,
+            _ => null
+        };
+
+        if (winner is not null)
+        {
+            winner.BorderThickness = new Thickness(2);
+            winner.BorderBrush = label switch
+            {
+                0 => new SolidColorBrush(Color.FromRgb(0xEF, 0x53, 0x50)),
+                1 => new SolidColorBrush(Color.FromRgb(0xFF, 0xA7, 0x26)),
+                2 => new SolidColorBrush(Color.FromRgb(0x66, 0xBB, 0x6A)),
+                _ => Brushes.Transparent
+            };
+            winner.Opacity = 1.0;
+        }
+    }
+
+    private void AnimateBar(ProgressBar bar, double targetValue, double delaySeconds)
+    {
+        var animation = new DoubleAnimation
+        {
+            From = 0,
+            To = targetValue,
+            Duration = TimeSpan.FromMilliseconds(850),
+            BeginTime = TimeSpan.FromSeconds(delaySeconds),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        bar.BeginAnimation(ProgressBar.ValueProperty, animation);
+    }
+
+    private void AnimatePct(TextBlock textBlock, double targetPct, double delaySeconds)
+    {
+        var timer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(16) // ~60fps
+        };
+
+        var startTime = DateTime.Now + TimeSpan.FromSeconds(delaySeconds);
+        var duration = TimeSpan.FromMilliseconds(850);
+
+        timer.Tick += (_, _) =>
+        {
+            var now = DateTime.Now;
+            if (now < startTime) return;
+
+            var elapsed = (now - startTime).TotalMilliseconds;
+            var progress = Math.Min(elapsed / duration.TotalMilliseconds, 1.0);
+
+            // Cubic ease-out
+            var eased = 1 - Math.Pow(1 - progress, 3);
+            var current = targetPct * eased;
+
+            textBlock.Text = $"{current:0.0}%";
+
+            if (progress >= 1.0)
+            {
+                textBlock.Text = $"{targetPct:0.0}%";
+                timer.Stop();
+            }
+        };
+
+        timer.Start();
+    }
+
+    private void AnimateBlockIn(UIElement element, double delayMs)
+    {
+        var translate = new TranslateTransform { Y = 24 };
+        element.RenderTransform = translate;
+        element.Opacity = 0;
+
+        var opacityAnim = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(500))
+        {
+            BeginTime = TimeSpan.FromMilliseconds(delayMs),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        var translateAnim = new DoubleAnimation(24, 0, TimeSpan.FromMilliseconds(500))
+        {
+            BeginTime = TimeSpan.FromMilliseconds(delayMs),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        element.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+        translate.BeginAnimation(TranslateTransform.YProperty, translateAnim);
+    }
+
+    private static string FindSolutionRoot(string appBaseDir)
+    {
+        var dir = new DirectoryInfo(appBaseDir);
+        for (int i = 0; i < 6 && dir != null; i++)
+        {
+            var candidate = Path.Combine(dir.FullName, "data", "raw", "Match.csv");
+            if (File.Exists(candidate))
+                return dir.FullName;
+            dir = dir.Parent;
+        }
+        return Directory.GetCurrentDirectory();
+    }
+
+    private static string LoadApiKey()
+    {
+        try
+        {
+            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keys.json");
+            if (!File.Exists(path)) return string.Empty;
+            var json = File.ReadAllText(path);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            return doc.RootElement.GetProperty("ApiKey").GetString() ?? string.Empty;
+        }
+        catch { return string.Empty; }
+    }
+
+    private string? GetLogoPath(int teamApiId)
+        => _logoCache.TryGetValue(teamApiId, out var path) ? path : null;
+
+    private static SolidColorBrush Brush(string hex)
+        => new((Color)ColorConverter.ConvertFromString(hex));
+
+    public sealed class FeatureRow
+    {
+        public string Metric { get; init; } = string.Empty;
+        public float Home { get; init; }
+        public float Away { get; init; }
+        public float Diff { get; init; }
     }
 }

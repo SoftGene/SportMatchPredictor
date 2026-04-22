@@ -50,5 +50,5 @@ public class MatchData
     public float GoalDiffDiff { get; set; }
 
     [LoadColumn(15)]
-    public float Result { get; set; } // 0/1/2
+    public float Result { get; set; } // 0=AwayWin, 1=Draw, 2=HomeWin
 }
