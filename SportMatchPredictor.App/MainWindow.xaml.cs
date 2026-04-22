@@ -3,7 +3,12 @@ using SportMatchPredictor.ML.Data;
 using SportMatchPredictor.ML.Services;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
+using MaterialDesignThemes.Wpf;
+using System.Windows.Media.Imaging;
+using System.Threading.Tasks;
 
 namespace SportMatchPredictor.App;
 
@@ -11,6 +16,8 @@ public partial class MainWindow : Window
 {
     private List<TeamViewModel> _teams = new();
     private IReadOnlyList<RawMatchRecord> _matches = Array.Empty<RawMatchRecord>();
+    private IReadOnlyList<string> _seasons = Array.Empty<string>();
+    private bool _isDarkTheme = false;
 
     private ModelService? _model;
 
@@ -80,6 +87,7 @@ public partial class MainWindow : Window
             _matches = FootballDataLoader.LoadMatches(matchCsv);
 
             var seasons = FootballDataLoader.GetSeasons(_matches);
+            _seasons = seasons;
             SeasonCombo.ItemsSource = seasons;
             SeasonCombo.SelectedItem = seasons.LastOrDefault();
 
@@ -88,7 +96,14 @@ public partial class MainWindow : Window
             HomeTeamCombo.SelectionChanged += (_, _) => ValidateSelection();
             AwayTeamCombo.SelectionChanged += (_, _) => ValidateSelection();
 
-            StatusText.Text = $"Loaded: Teams={_teams.Count}, Matches={_matches.Count}.";
+            QuickStatsText.Text = $"Trained on {_matches.Count:N0} matches  ·  {_teams.Count} European teams  ·  14 predictive features";
+
+            var missingLogosDir = Path.Combine(FindSolutionRoot(AppDomain.CurrentDomain.BaseDirectory), "data", "logos");
+            var notFound = _teams
+                .Where(t => !File.Exists(Path.Combine(missingLogosDir, $"{t.TeamApiId}.png")))
+                .Select(t => $"{t.TeamApiId} - {t.TeamLongName}")
+                .ToList();
+            File.WriteAllLines(Path.Combine(missingLogosDir, "not_found.txt"), notFound);
 
             var logosDir = Path.Combine(root, "data", "logos");
             _ = LoadLogosAsync(_teams.ToList(), logosDir);
@@ -98,17 +113,33 @@ public partial class MainWindow : Window
             StatusText.Text = "Startup error: " + ex.Message;
             MessageBox.Show(ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+        ShowResult(false);
     }
 
     private async Task LoadLogosAsync(List<TeamViewModel> teams, string logosDir)
     {
+        // Шаг 1 — мгновенно показываем все уже скачанные логотипы
         foreach (var vm in teams)
         {
-            var path = await SportMatchPredictor.ML.Services.TeamLogoService.GetLogoPathAsync(
+            var localPath = Path.Combine(logosDir, $"{vm.TeamApiId}.png");
+            if (File.Exists(localPath))
+            {
+                _logoCache[vm.TeamApiId] = localPath;
+                vm.LogoPath = localPath; // напрямую, без Dispatcher — мы уже в UI потоке
+            }
+        }
+
+        // Шаг 2 — в фоне докачиваем те у которых нет файла
+        var missing = teams.Where(t => !_logoCache.ContainsKey(t.TeamApiId)).ToList();
+        foreach (var vm in missing)
+        {
+            var path = await TeamLogoService.GetLogoPathAsync(
                 vm.TeamApiId, vm.TeamLongName, ApiKey, logosDir);
             _logoCache[vm.TeamApiId] = path;
             if (path is not null)
-                Application.Current.Dispatcher.BeginInvoke(() => vm.LogoPath = path);
+                _ = Application.Current.Dispatcher.BeginInvoke(() => vm.LogoPath = path);
+
+            await Task.Delay(800);
         }
     }
 
@@ -179,13 +210,18 @@ public partial class MainWindow : Window
                 AnimateBar(DrawBar, p[1], 0.15);
                 AnimateBar(HomeBar, p[2], 0.3);
 
-                AwayPct.Text = $"{p[0] * 100:0.0}%";
-                DrawPct.Text = $"{p[1] * 100:0.0}%";
-                HomePct.Text = $"{p[2] * 100:0.0}%";
                 confPct = p[label] * 100f;
-                ConfidenceText.Text = $"{confPct:0.0}%";
+                AwayPct.Text = "0.0%";
+                DrawPct.Text = "0.0%";
+                HomePct.Text = "0.0%";
+                ConfidenceText.Text = "0.0%";
+                AnimatePct(AwayPct, p[0] * 100, 0.0);
+                AnimatePct(DrawPct, p[1] * 100, 0.15);
+                AnimatePct(HomePct, p[2] * 100, 0.3);
+                AnimatePct(ConfidenceText, confPct, 0.0);
 
                 HighlightWinningBar(label);
+                ShowResult(true);
             }
             else
             {
@@ -194,6 +230,23 @@ public partial class MainWindow : Window
             }
 
             AddToHistory(home.TeamLongName, away.TeamLongName, season, label, confPct);
+
+            // Home Win (2) — HomeLogo слева, остальные скрыты
+            // Away Win (0) — AwayLogo слева, остальные скрыты  
+            // Draw (1)     — HomeLogo слева, AwayLogoRight справа
+            HomeLogo.Source = (label == 2 || label == 1) && home.LogoPath is not null
+                ? new System.Windows.Media.Imaging.BitmapImage(new Uri(home.LogoPath))
+                : null;
+            AwayLogo.Source = label == 0 && away.LogoPath is not null
+                ? new System.Windows.Media.Imaging.BitmapImage(new Uri(away.LogoPath))
+                : null;
+            AwayLogoRight.Source = label == 1 && away.LogoPath is not null
+                ? new System.Windows.Media.Imaging.BitmapImage(new Uri(away.LogoPath))
+                : null;
+
+            HomeLogo.Visibility = HomeLogo.Source is not null ? Visibility.Visible : Visibility.Collapsed;
+            AwayLogo.Visibility = AwayLogo.Source is not null ? Visibility.Visible : Visibility.Collapsed;
+            AwayLogoRight.Visibility = AwayLogoRight.Source is not null ? Visibility.Visible : Visibility.Collapsed;
 
             if (true)
             {
@@ -266,15 +319,63 @@ public partial class MainWindow : Window
         {
             From = 0,
             To = targetValue,
-            Duration = TimeSpan.FromMilliseconds(600),
+            Duration = TimeSpan.FromMilliseconds(850),
             BeginTime = TimeSpan.FromSeconds(delaySeconds),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
         bar.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, animation);
     }
 
-    private void ClearBtn_Click(object sender, RoutedEventArgs e)
+    private void AnimatePct(System.Windows.Controls.TextBlock textBlock, double targetPct, double delaySeconds)
     {
+        var timer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(16) // ~60fps
+        };
+
+        var startTime = DateTime.Now + TimeSpan.FromSeconds(delaySeconds);
+        var duration = TimeSpan.FromMilliseconds(850);
+
+        timer.Tick += (_, _) =>
+        {
+            var now = DateTime.Now;
+            if (now < startTime) return;
+
+            var elapsed = (now - startTime).TotalMilliseconds;
+            var progress = Math.Min(elapsed / duration.TotalMilliseconds, 1.0);
+
+            // EaseOut кубическая
+            var eased = 1 - Math.Pow(1 - progress, 3);
+            var current = targetPct * eased;
+
+            textBlock.Text = $"{current:0.0}%";
+
+            if (progress >= 1.0)
+            {
+                textBlock.Text = $"{targetPct:0.0}%";
+                timer.Stop();
+            }
+        };
+
+        timer.Start();
+    }
+
+    private async void ClearBtn_Click(object sender, RoutedEventArgs e)
+    {
+
+        if (HeroBlock.Visibility == Visibility.Visible)
+        {
+            var fadeOut = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(200))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+            };
+            HeroBlock.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+            ProbabilityBlock.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+            TabBlock.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+
+            await Task.Delay(200);
+        }
+
         SeasonCombo.SelectedIndex = -1;
         HomeTeamCombo.SelectedIndex = -1;
         AwayTeamCombo.SelectedIndex = -1;
@@ -299,6 +400,13 @@ public partial class MainWindow : Window
         AwayBorder.Opacity = 1.0;
         DrawBorder.Opacity = 1.0;
         HomeBorder.Opacity = 1.0;
+        HomeLogo.Source = null;
+        AwayLogo.Source = null;
+        AwayLogoRight.Source = null;
+        HomeLogo.Visibility = Visibility.Collapsed;
+        AwayLogo.Visibility = Visibility.Collapsed;
+        AwayLogoRight.Visibility = Visibility.Collapsed;
+        ShowResult(false);
     }
 
     private static string FindSolutionRoot(string appBaseDir)
@@ -313,6 +421,216 @@ public partial class MainWindow : Window
         }
         return Directory.GetCurrentDirectory();
     }
+
+    private void SwapBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var home = HomeTeamCombo.SelectedItem;
+        var away = AwayTeamCombo.SelectedItem;
+        HomeTeamCombo.SelectedItem = away;
+        AwayTeamCombo.SelectedItem = home;
+    }
+
+    private void ShowResult(bool show)
+    {
+        EmptyState.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
+        ResultHeader.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        ResultScrollViewer.VerticalScrollBarVisibility =
+            show ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+
+        if (show)
+        {
+            // сначала скрываем и сбрасываем
+            HeroBlock.Visibility = Visibility.Collapsed;
+            ProbabilityBlock.Visibility = Visibility.Collapsed;
+            TabBlock.Visibility = Visibility.Collapsed;
+            HeroBlock.Opacity = 0;
+            ProbabilityBlock.Opacity = 0;
+            TabBlock.Opacity = 0;
+
+            // небольшая задержка чтобы UI успел обновиться
+            Dispatcher.InvokeAsync(() =>
+            {
+                HeroBlock.Visibility = Visibility.Visible;
+                ProbabilityBlock.Visibility = Visibility.Visible;
+                TabBlock.Visibility = Visibility.Visible;
+
+                AnimateBlockIn(HeroBlock, 0);
+                AnimateBlockIn(ProbabilityBlock, 120);
+                AnimateBlockIn(TabBlock, 240);
+            }, System.Windows.Threading.DispatcherPriority.Render);
+        }
+        else
+        {
+            HeroBlock.Visibility = Visibility.Collapsed;
+            ProbabilityBlock.Visibility = Visibility.Collapsed;
+            TabBlock.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void AnimateBlockIn(UIElement element, double delayMs)
+    {
+        // сбрасываем трансформацию
+        var translate = new TranslateTransform { Y = 24 };
+        element.RenderTransform = translate;
+        element.Opacity = 0;
+
+        // анимация Opacity
+        var opacityAnim = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(500))
+        {
+            BeginTime = TimeSpan.FromMilliseconds(delayMs),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        // анимация движения снизу вверх
+        var translateAnim = new DoubleAnimation(24, 0, TimeSpan.FromMilliseconds(500))
+        {
+            BeginTime = TimeSpan.FromMilliseconds(delayMs),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        element.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+        translate.BeginAnimation(TranslateTransform.YProperty, translateAnim);
+    }
+
+    private void RandomBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_teams.Count < 2 || _seasons.Count == 0) return;
+
+        var rnd = new Random();
+
+        // пробуем несколько раз найти валидную комбинацию
+        for (int attempt = 0; attempt < 50; attempt++)
+        {
+            var season = _seasons[rnd.Next(_seasons.Count)];
+            var home = _teams[rnd.Next(_teams.Count)];
+            var away = _teams[rnd.Next(_teams.Count)];
+
+            if (home.TeamApiId == away.TeamApiId) continue;
+
+            try
+            {
+                // проверяем что FeatureBuilder не бросит исключение
+                FeatureBuilder.BuildFeatures(_matches, home.TeamApiId, away.TeamApiId, season);
+
+                // нашли валидную комбинацию — применяем
+                SeasonCombo.SelectedItem = season;
+                HomeTeamCombo.SelectedItem = home;
+                AwayTeamCombo.SelectedItem = away;
+
+                Dispatcher.InvokeAsync(() => PredictBtn_Click(this, new RoutedEventArgs()),
+                    System.Windows.Threading.DispatcherPriority.Background);
+                return;
+            }
+            catch
+            {
+                // эта комбинация не подходит — пробуем следующую
+                continue;
+            }
+        }
+
+        StatusText.Text = "⚠ Could not find a valid random match. Try again.";
+    }
+
+    private void RandomBtn_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        var rotate = new DoubleAnimation
+        {
+            From = 0,
+            To = 25,
+            Duration = TimeSpan.FromMilliseconds(150),
+            AutoReverse = true,
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+        };
+        var transform = new RotateTransform();
+        RandomIcon.RenderTransform = transform;
+        RandomIcon.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
+        transform.BeginAnimation(RotateTransform.AngleProperty, rotate);
+    }
+
+    private void ThemeToggleBtn_Click(object sender, RoutedEventArgs e)
+    {
+        // 1. Скриншот текущего состояния
+        var bmp = new RenderTargetBitmap(
+            (int)ActualWidth, (int)ActualHeight, 96, 96, PixelFormats.Pbgra32);
+        bmp.Render(this);
+
+        var overlay = new System.Windows.Shapes.Rectangle
+        {
+            Width = ActualWidth,
+            Height = ActualHeight,
+            Fill = new ImageBrush(bmp),
+            IsHitTestVisible = false
+        };
+
+        System.Windows.Controls.Grid.SetRowSpan(overlay, 3);
+
+        // 2. Кладём поверх интерфейса
+        RootGrid.Children.Add(overlay);
+
+        // 3. Меняем тему
+        _isDarkTheme = !_isDarkTheme;
+        ThemeIcon.Kind = _isDarkTheme ? PackIconKind.WeatherSunny : PackIconKind.WeatherNight;
+
+        var res = Application.Current.Resources;
+        if (_isDarkTheme)
+        {
+            res["MaterialDesignBackground"] = Brush("#1A1C18");
+            res["MaterialDesignPaper"] = Brush("#252822");
+            res["MaterialDesignCardBackground"] = Brush("#252822");
+            res["MaterialDesignDivider"] = Brush("#3A3D35");
+            res["MaterialDesignToolBarBackground"] = Brush("#2A2D26");
+            res["MaterialDesignBody"] = Brush("#E3E4DB");
+            res["MaterialDesignBodyLight"] = Brush("#9DAA8F");
+            res["AppOutlineBrush"] = Brush("#4A4D45");
+            res["SurfaceTintBrush"] = Brush("#252E1A");
+            res["SuccessSurfaceBrush"] = Brush("#1A2E1A");
+            res["WarnSurfaceBrush"] = Brush("#2E2410");
+            res["DangerSurfaceBrush"] = Brush("#2E1A1A");
+            res["SecondaryAccentBrush"] = Brush("#2A3520");
+            res["SecondaryHueMidBrush"] = Brush("#2A3520");
+            res["MaterialDesign.Brush.Background"] = Brush("#1A1C18");
+            res["MaterialDesign.Brush.Card"] = Brush("#252822");
+            res["CardSurfaceBrush"] = Brush("#252822");
+            res["MaterialDesign.Brush.ForegroundBase"] = Brush("#E3E4DB");
+            res["MaterialDesign.Brush.Foreground"] = Brush("#E3E4DB");
+            res["MaterialDesign.Brush.Body"] = Brush("#E3E4DB");
+            res["MaterialDesign.Brush.BodyLight"] = Brush("#9DAA8F");
+            res["MaterialDesignCheckBoxOff"] = Brush("#9DAA8F");
+        }
+        else
+        {
+            res["MaterialDesignBackground"] = Brush("#F7F8F2");
+            res["MaterialDesignPaper"] = Brush("#FFFFFF");
+            res["MaterialDesignCardBackground"] = Brush("#FFFFFF");
+            res["MaterialDesignDivider"] = Brush("#D9DFCF");
+            res["MaterialDesignToolBarBackground"] = Brush("#EEF3E6");
+            res["MaterialDesignBody"] = Brush("#1B1C18");
+            res["MaterialDesignBodyLight"] = Brush("#5F6656");
+            res["AppOutlineBrush"] = Brush("#C5CCB8");
+            res["SurfaceTintBrush"] = Brush("#F2F5EA");
+            res["SuccessSurfaceBrush"] = Brush("#E8F4E5");
+            res["WarnSurfaceBrush"] = Brush("#FFF2E1");
+            res["DangerSurfaceBrush"] = Brush("#FCE7E5");
+            res["SecondaryAccentBrush"] = Brush("#DDE8CB");
+            res["SecondaryHueMidBrush"] = Brush("#DDE8CB");
+            res["MaterialDesign.Brush.Background"] = Brush("#F7F8F2");
+            res["MaterialDesign.Brush.Card"] = Brush("#FFFFFF");
+            res["CardSurfaceBrush"] = Brush("#FFFFFF");
+            res["MaterialDesign.Brush.ForegroundBase"] = Brush("#1B1C18");
+            res["MaterialDesign.Brush.Foreground"] = Brush("#1B1C18");
+            res["MaterialDesign.Brush.Body"] = Brush("#1B1C18");
+            res["MaterialDesign.Brush.BodyLight"] = Brush("#5F6656");
+            res["MaterialDesignCheckBoxOff"] = Brush("#6B7261");
+        }
+
+        // 4. Плавно растворяем скриншот
+        var anim = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(350));
+        anim.Completed += (_, _) => RootGrid.Children.Remove(overlay);
+        overlay.BeginAnimation(UIElement.OpacityProperty, anim);
+    }
+
+    private static System.Windows.Media.SolidColorBrush Brush(string hex)
+        => new((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex));
 
     private void SeasonCombo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {

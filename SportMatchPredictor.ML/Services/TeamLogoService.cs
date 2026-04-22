@@ -7,22 +7,74 @@ public static class TeamLogoService
 {
     private static readonly HttpClient _http = new();
 
-    private static string SanitizeTeamName(string name)
+    private static readonly string[] Prefixes =
+    [
+        "KRC ", "KAA ", "BSC ", "RCD ", "RSC ", "PSV ", "PEC ", "NAC ", "NEC ",
+        "SpVgg ", "TSG ", "VfL ", "VfB ", "GKS ", "AZ ", "SV ", "AS ", "US ",
+        "KV ", "FC ", "AC ", "SC ", "RC ", "SD ", "UD ", "CD ", "CF "
+    ];
+
+    private static readonly string[] Suffixes =
+    [
+        " FC", " CF", " AC", " SC", " FK", " SK", " BK", " IF"
+    ];
+
+    private static List<string> GetVariants(string teamName)
     {
-        // замен€ем умл€уты и акценты на базовые буквы
-        var normalized = name.Normalize(System.Text.NormalizationForm.FormD);
-        var sb = new System.Text.StringBuilder();
-        foreach (var c in normalized)
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var variants = new List<string>();
+
+        void Add(string s)
         {
-            var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
-            if (category == System.Globalization.UnicodeCategory.NonSpacingMark)
-                continue;
-            // оставл€ем только буквы, цифры и пробелы
-            if (char.IsLetterOrDigit(c) || c == ' ')
-                sb.Append(c);
+            s = s.Trim();
+            if (!string.IsNullOrWhiteSpace(s) && seen.Add(s))
+                variants.Add(s);
         }
-        // убираем двойные пробелы
-        return System.Text.RegularExpressions.Regex.Replace(sb.ToString().Trim(), @"\s+", " ");
+
+        Add(teamName);
+
+        var stripped = teamName;
+        foreach (var p in Prefixes)
+        {
+            if (teamName.StartsWith(p, StringComparison.OrdinalIgnoreCase))
+            {
+                stripped = teamName[p.Length..];
+                break;
+            }
+        }
+        Add(stripped);
+
+        var strippedSuffix = stripped;
+        foreach (var s in Suffixes)
+        {
+            if (stripped.EndsWith(s, StringComparison.OrdinalIgnoreCase))
+            {
+                strippedSuffix = stripped[..^s.Length];
+                break;
+            }
+        }
+        Add(strippedSuffix);
+
+        var words = strippedSuffix.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length > 0 && words[0].Length > 4)
+            Add(words[0]);
+        if (words.Length >= 2)
+            Add(string.Join(' ', words[0], words[1]));
+
+        return variants;
+    }
+
+    private static async Task<string?> FetchBadgeUrlAsync(string query)
+    {
+        var url = $"https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t={Uri.EscapeDataString(query)}";
+        var json = await _http.GetStringAsync(url);
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        if (!root.TryGetProperty("teams", out var teams) || teams.ValueKind != JsonValueKind.Array)
+            return null;
+        if (teams.GetArrayLength() == 0)
+            return null;
+        return teams[0].GetProperty("strBadge").GetString();
     }
 
     public static async Task<string?> GetLogoPathAsync(
@@ -36,31 +88,18 @@ public static class TeamLogoService
 
             Directory.CreateDirectory(logosDir);
 
-            var sanitized = SanitizeTeamName(teamName);
-            if (string.IsNullOrWhiteSpace(sanitized)) return null;
+            string? logoUrl = null;
+            var variants = GetVariants(teamName);
 
-            using var request = new HttpRequestMessage(HttpMethod.Get,
-                $"https://v3.football.api-sports.io/teams?search={Uri.EscapeDataString(sanitized)}");
-            request.Headers.Add("x-apisports-key", apiKey);
+            for (int i = 0; i < variants.Count; i++)
+            {
+                if (i > 0)
+                    await Task.Delay(200);
 
-            var response = await _http.SendAsync(request);
-            if (!response.IsSuccessStatusCode) return null;
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            // временный лог
-            await File.AppendAllTextAsync(
-                Path.Combine(logosDir, "api_log.txt"),
-                $"\n\n=== {teamName} -> [{sanitized}] ===\n{json}");
-
-            using var doc = JsonDocument.Parse(json);
-            var results = doc.RootElement.GetProperty("response");
-            if (results.GetArrayLength() == 0) return null;
-
-            var logoUrl = results[0]
-                .GetProperty("team")
-                .GetProperty("logo")
-                .GetString();
+                logoUrl = await FetchBadgeUrlAsync(variants[i]);
+                if (!string.IsNullOrEmpty(logoUrl))
+                    break;
+            }
 
             if (string.IsNullOrEmpty(logoUrl)) return null;
 

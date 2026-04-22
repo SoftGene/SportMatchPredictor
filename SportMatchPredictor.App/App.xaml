@@ -47,6 +47,12 @@
             <SolidColorBrush x:Key="DangerSurfaceBrush"                Color="#FCE7E5"/>
             <SolidColorBrush x:Key="SecondaryAccentBrush" Color="#DDE8CB"/>
 
+            <SolidColorBrush x:Key="CardSurfaceBrush" Color="#FFFFFF"/>
+
+            <Style TargetType="materialDesign:Card">
+                <Setter Property="Background" Value="{DynamicResource CardSurfaceBrush}"/>
+            </Style>
+
             <!-- ─── Стиль окна ─── -->
             <Style TargetType="Window">
                 <Setter Property="Background"              Value="{DynamicResource MaterialDesignBackground}"/>
