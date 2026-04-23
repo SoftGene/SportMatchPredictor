@@ -22,7 +22,9 @@ public partial class MainWindow : Window
     private ModelService? _model;
     private static readonly string ApiKey = LoadApiKey();
     private readonly Dictionary<int, string?> _logoCache = new();
-    private readonly List<string> _history = new();
+    private readonly List<HistoryEntry> _history = new();
+    private System.Windows.Data.ListCollectionView? _homeView;
+    private System.Windows.Data.ListCollectionView? _awayView;
 
     public MainWindow()
     {
@@ -59,8 +61,11 @@ public partial class MainWindow : Window
             SeasonCombo.ItemsSource = seasons;
             SeasonCombo.SelectedItem = seasons.LastOrDefault();
 
-            HomeTeamCombo.ItemsSource = _teams;
-            AwayTeamCombo.ItemsSource = _teams;
+            // Independent views so filtering Home's list doesn't affect Away's list
+            _homeView = new System.Windows.Data.ListCollectionView(_teams);
+            _awayView = new System.Windows.Data.ListCollectionView(_teams);
+            HomeTeamCombo.ItemsSource = _homeView;
+            AwayTeamCombo.ItemsSource = _awayView;
             HomeTeamCombo.SelectionChanged += (_, _) => ValidateSelection();
             AwayTeamCombo.SelectionChanged += (_, _) => ValidateSelection();
 
@@ -176,7 +181,7 @@ public partial class MainWindow : Window
                 AwayPct.Text = DrawPct.Text = HomePct.Text = ConfidenceText.Text = string.Empty;
             }
 
-            AddToHistory(home.TeamLongName, away.TeamLongName, season, label, confPct);
+            AddToHistory(home, away, season, label, confPct);
 
             // HomeWin (2): HomeLogo left, others hidden
             // AwayWin (0): AwayLogo left, others hidden
@@ -195,14 +200,10 @@ public partial class MainWindow : Window
             AwayLogo.Visibility = AwayLogo.Source is not null ? Visibility.Visible : Visibility.Collapsed;
             AwayLogoRight.Visibility = AwayLogoRight.Source is not null ? Visibility.Visible : Visibility.Collapsed;
 
-            FeaturesGrid.ItemsSource = new List<FeatureRow>
-            {
-                new() { Metric = "Avg Goals For",     Home = features.HomeAvgGoalsFor,     Away = features.AwayAvgGoalsFor,     Diff = features.AvgGoalsForDiff },
-                new() { Metric = "Avg Goals Against", Home = features.HomeAvgGoalsAgainst, Away = features.AwayAvgGoalsAgainst, Diff = features.AvgGoalsAgainstDiff },
-                new() { Metric = "Points Per Game",   Home = features.HomePointsPerGame,   Away = features.AwayPointsPerGame,   Diff = features.PointsPerGameDiff },
-                new() { Metric = "Win Rate",          Home = features.HomeWinRate,         Away = features.AwayWinRate,         Diff = features.WinRateDiff },
-                new() { Metric = "GoalDiff Diff",     Home = features.GoalDiffDiff,        Away = 0,                            Diff = features.GoalDiffDiff },
-            };
+            var rows = BuildFeatureRows(features);
+            var view = new System.Windows.Data.ListCollectionView(rows);
+            view.GroupDescriptions.Add(new System.Windows.Data.PropertyGroupDescription(nameof(FeatureRow.Category)));
+            FeaturesGrid.ItemsSource = view;
             FeaturesDebug.Text = string.Empty;
 
             StatusText.Text = "Prediction done.";
@@ -259,15 +260,133 @@ public partial class MainWindow : Window
         HomeLogo.Visibility = Visibility.Collapsed;
         AwayLogo.Visibility = Visibility.Collapsed;
         AwayLogoRight.Visibility = Visibility.Collapsed;
+        // Reset team cards
+        HomeEmptyState.Visibility = Visibility.Visible;
+        HomeSelectedState.Visibility = Visibility.Collapsed;
+        AwayEmptyState.Visibility = Visibility.Visible;
+        AwaySelectedState.Visibility = Visibility.Collapsed;
+        HomeLogoCard.Source = null;
+        AwayLogoCard.Source = null;
         ShowResult(false);
     }
 
     private void SwapBtn_Click(object sender, RoutedEventArgs e)
     {
-        var home = HomeTeamCombo.SelectedItem;
-        var away = AwayTeamCombo.SelectedItem;
+        var home = HomeTeamCombo.SelectedItem as TeamViewModel;
+        var away = AwayTeamCombo.SelectedItem as TeamViewModel;
         HomeTeamCombo.SelectedItem = away;
         AwayTeamCombo.SelectedItem = home;
+
+        if (away is not null) UpdateTeamCard(away, isHome: true);
+        else { HomeEmptyState.Visibility = Visibility.Visible; HomeSelectedState.Visibility = Visibility.Collapsed; }
+
+        if (home is not null) UpdateTeamCard(home, isHome: false);
+        else { AwayEmptyState.Visibility = Visibility.Visible; AwaySelectedState.Visibility = Visibility.Collapsed; }
+    }
+
+    private void HomeTeamCard_Click(object sender, RoutedEventArgs e)
+    {
+        OpenPickerWithBlur("Select Home Team", team =>
+        {
+            HomeTeamCombo.SelectedItem = team;
+            UpdateTeamCard(team, isHome: true);
+        });
+    }
+
+    private void AwayTeamCard_Click(object sender, RoutedEventArgs e)
+    {
+        OpenPickerWithBlur("Select Away Team", team =>
+        {
+            AwayTeamCombo.SelectedItem = team;
+            UpdateTeamCard(team, isHome: false);
+        });
+    }
+
+    private void OpenPickerWithBlur(string title, Action<TeamViewModel> onSelected)
+    {
+        // blur
+        var blur = new System.Windows.Media.Effects.BlurEffect { Radius = 0 };
+        RootGrid.Effect = blur;
+        var blurIn = new DoubleAnimation(0, 8, TimeSpan.FromMilliseconds(250))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        blur.BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, blurIn);
+
+        // прозрачный overlay поверх RootGrid — клик по нему закрывает пикер
+        var clickOverlay = new System.Windows.Shapes.Rectangle
+        {
+            Fill = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromArgb(1, 0, 0, 0)), // почти прозрачный но кликабельный
+            IsHitTestVisible = true,
+            Cursor = System.Windows.Input.Cursors.Arrow
+        };
+        Grid.SetRowSpan(clickOverlay, 3);
+        RootGrid.Children.Add(clickOverlay);
+
+        var picker = new TeamPickerWindow(_teams, title) { Owner = this };
+
+        // клик по overlay = закрыть пикер
+        clickOverlay.MouseDown += (_, _) =>
+        {
+            picker.DialogResult = false;
+            picker.Close();
+        };
+
+        if (picker.ShowDialog() == true && picker.SelectedTeam is { } team)
+            onSelected(team);
+
+        // убираем overlay и blur
+        RootGrid.Children.Remove(clickOverlay);
+
+        var blurOut = new DoubleAnimation(8, 0, TimeSpan.FromMilliseconds(200))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        blurOut.Completed += (_, _) => RootGrid.Effect = null;
+        blur.BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, blurOut);
+    }
+
+    private void UpdateTeamCard(TeamViewModel team, bool isHome)
+    {
+        if (isHome)
+        {
+            HomeEmptyState.Visibility = Visibility.Collapsed;
+            HomeSelectedState.Visibility = Visibility.Visible;
+            HomeTeamName.Text = team.TeamLongName;
+            HomeInitial.Text = team.Initial;
+
+            if (team.LogoPath is not null)
+            {
+                HomeLogoCard.Source = new BitmapImage(new Uri(team.LogoPath));
+                HomeLogoCard.Visibility = Visibility.Visible;
+                HomeBadge.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                HomeLogoCard.Visibility = Visibility.Collapsed;
+                HomeBadge.Visibility = Visibility.Visible;
+            }
+        }
+        else
+        {
+            AwayEmptyState.Visibility = Visibility.Collapsed;
+            AwaySelectedState.Visibility = Visibility.Visible;
+            AwayTeamName.Text = team.TeamLongName;
+            AwayInitial.Text = team.Initial;
+
+            if (team.LogoPath is not null)
+            {
+                AwayLogoCard.Source = new BitmapImage(new Uri(team.LogoPath));
+                AwayLogoCard.Visibility = Visibility.Visible;
+                AwayBadgeCard.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                AwayLogoCard.Visibility = Visibility.Collapsed;
+                AwayBadgeCard.Visibility = Visibility.Visible;
+            }
+        }
     }
 
     private void RandomBtn_Click(object sender, RoutedEventArgs e)
@@ -291,6 +410,9 @@ public partial class MainWindow : Window
                 SeasonCombo.SelectedItem = season;
                 HomeTeamCombo.SelectedItem = home;
                 AwayTeamCombo.SelectedItem = away;
+
+                UpdateTeamCard(home, isHome: true);
+                UpdateTeamCard(away, isHome: false);
 
                 Dispatcher.InvokeAsync(() => PredictBtn_Click(this, new RoutedEventArgs()),
                     DispatcherPriority.Background);
@@ -430,18 +552,140 @@ public partial class MainWindow : Window
         }
     }
 
-    private void AddToHistory(string home, string away, string season, int label, float confPct)
+    private void AddToHistory(TeamViewModel home, TeamViewModel away, string season, int label, float confPct)
     {
-        var outcome = label switch { 0 => "Away Win", 1 => "Draw", 2 => "Home Win", _ => "?" };
-        var entry = $"{home} vs {away}  ·  {season}  ·  {outcome}  ·  {confPct:0.0}%";
+        static Brush Res(string key) => (Brush)System.Windows.Application.Current.FindResource(key);
 
-        if (_history.Contains(entry))
-            return;
+        var (outcomeText, brushKey) = label switch
+        {
+            0 => ("Away Win", "DangerBrush"),
+            1 => ("Draw", "WarnBrush"),
+            2 => ("Home Win", "SuccessBrush"),
+            _ => ("—", "MaterialDesignBodyLight"),
+        };
+
+        // Dedup by season + teams + outcome
+        var dupKey = $"{home.TeamApiId}-{away.TeamApiId}-{season}-{label}";
+        var existing = _history.FirstOrDefault(e => e.Key == dupKey);
+        if (existing is not null)
+            _history.Remove(existing);
+
+        var entry = new HistoryEntry
+        {
+            Key = dupKey,
+            HomeTeamId = home.TeamApiId,
+            AwayTeamId = away.TeamApiId,
+            HomeShort = home.TeamShortName,
+            AwayShort = away.TeamShortName,
+            HomeLogo = home.LogoPath,
+            AwayLogo = away.LogoPath,
+            HomeInitial = home.Initial,
+            AwayInitial = away.Initial,
+            Season = season,
+            OutcomeText = outcomeText,
+            OutcomeBrush = Res(brushKey),
+            ConfidenceText = $"{confPct:0.0}%",
+        };
 
         _history.Insert(0, entry);
-        if (_history.Count > 5) _history.RemoveAt(5);
+        if (_history.Count > 6) _history.RemoveAt(_history.Count - 1);
         HistoryList.ItemsSource = null;
         HistoryList.ItemsSource = _history;
+    }
+
+    private async void HistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (HistoryList.SelectedItem is not HistoryEntry entry) return;
+
+        // Reset selection so the same item can be clicked again later
+        var picked = entry;
+        HistoryList.SelectedIndex = -1;
+
+        // Re-apply the match configuration
+        if (_seasons.Contains(picked.Season))
+            SeasonCombo.SelectedItem = picked.Season;
+
+        // Force-trigger the season filter so teams are rebuilt for that season
+        await Task.Delay(50);
+
+        var home = _teams.FirstOrDefault(t => t.TeamApiId == picked.HomeTeamId);
+        var away = _teams.FirstOrDefault(t => t.TeamApiId == picked.AwayTeamId);
+        if (home is null || away is null) return;
+
+        HomeTeamCombo.SelectedItem = home;
+        AwayTeamCombo.SelectedItem = away;
+
+        UpdateTeamCard(home, isHome: true);
+        UpdateTeamCard(away, isHome: false);
+
+        await Task.Delay(50);
+        PredictBtn_Click(this, new RoutedEventArgs());
+    }
+
+    // ── Team picker — filter as you type ──
+    private void TeamCombo_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ComboBox combo) return;
+        if (combo.Template.FindName("PART_EditableTextBox", combo) is not TextBox tb) return;
+        tb.TextChanged -= TeamEditable_TextChanged;
+        tb.TextChanged += TeamEditable_TextChanged;
+    }
+
+    private void TeamEditable_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox tb) return;
+        var combo = FindAncestor<ComboBox>(tb);
+        if (combo is null) return;
+        var view = combo.ItemsSource as System.Windows.Data.ListCollectionView;
+        if (view is null) return;
+
+        var text = tb.Text?.Trim() ?? string.Empty;
+
+        // If the current text equals the selected team's full name, don't filter (just committed a pick)
+        if (combo.SelectedItem is TeamViewModel sel &&
+            string.Equals(text, sel.TeamLongName, StringComparison.Ordinal))
+        {
+            view.Filter = null;
+            return;
+        }
+
+        if (string.IsNullOrEmpty(text))
+        {
+            view.Filter = null;
+        }
+        else
+        {
+            view.Filter = o => o is TeamViewModel t &&
+                t.TeamLongName.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0;
+            if (!combo.IsDropDownOpen) combo.IsDropDownOpen = true;
+        }
+    }
+
+    private static T? FindAncestor<T>(DependencyObject current) where T : DependencyObject
+    {
+        while (current is not null)
+        {
+            if (current is T t) return t;
+            current = System.Windows.Media.VisualTreeHelper.GetParent(current);
+        }
+        return null;
+    }
+
+    public sealed class HistoryEntry
+    {
+        public string Key { get; init; } = "";
+        public int HomeTeamId { get; init; }
+        public int AwayTeamId { get; init; }
+        public string HomeShort { get; init; } = "";
+        public string AwayShort { get; init; } = "";
+        public string? HomeLogo { get; init; }
+        public string? AwayLogo { get; init; }
+        public string HomeInitial { get; init; } = "?";
+        public string AwayInitial { get; init; } = "?";
+        public string Season { get; init; } = "";
+        public string OutcomeText { get; init; } = "";
+        public Brush OutcomeBrush { get; init; } = Brushes.Gray;
+        public string ConfidenceText { get; init; } = "";
     }
 
     private void ShowResult(bool show)
@@ -618,8 +862,125 @@ public partial class MainWindow : Window
     public sealed class FeatureRow
     {
         public string Metric { get; init; } = string.Empty;
+        public string Description { get; init; } = string.Empty;
+        public string Category { get; init; } = string.Empty;
+        public PackIconKind Icon { get; init; }
         public float Home { get; init; }
         public float Away { get; init; }
         public float Diff { get; init; }
+
+        // Display strings
+        public string HomeText => Home.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+        public string AwayText => Away.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+        public string DiffText { get; init; } = "";
+
+        // Diverging-bar proportions (precomputed star units)
+        public GridLength HomeFillStar { get; init; } = new(0, GridUnitType.Star);
+        public GridLength HomeEmptyStar { get; init; } = new(1, GridUnitType.Star);
+        public GridLength AwayFillStar { get; init; } = new(0, GridUnitType.Star);
+        public GridLength AwayEmptyStar { get; init; } = new(1, GridUnitType.Star);
+
+        // Bar & value brushes (may be swapped for inverted metrics like "goals against")
+        public Brush HomeBarBrush { get; init; } = Brushes.Transparent;
+        public Brush AwayBarBrush { get; init; } = Brushes.Transparent;
+        public Brush HomeValueBrush { get; init; } = Brushes.Black;
+        public Brush AwayValueBrush { get; init; } = Brushes.Black;
+
+        // Category pill brushes
+        public Brush CategoryBgBrush { get; init; } = Brushes.Transparent;
+        public Brush CategoryFgBrush { get; init; } = Brushes.Black;
+
+        // Delta pill
+        public Brush DeltaBg { get; init; } = Brushes.Transparent;
+        public Brush DeltaFg { get; init; } = Brushes.Black;
+        public PackIconKind DeltaIcon { get; init; } = PackIconKind.MinusThick;
+    }
+
+    private static List<FeatureRow> BuildFeatureRows(MatchData f)
+    {
+        static Brush Res(string key) => (Brush)System.Windows.Application.Current.FindResource(key);
+
+        FeatureRow Make(
+            string name, string desc, string category, PackIconKind icon,
+            float home, float away, float diff, bool isInverted = false)
+        {
+            // Normalise per-row: biggest absolute value → 100 % fill
+            var max = Math.Max(Math.Abs(home), Math.Abs(away));
+            var homeRatio = max > 0 ? Math.Abs(home) / max : 0;
+            var awayRatio = max > 0 ? Math.Abs(away) / max : 0;
+
+            // Bar colours (swap for "lower is better" metrics)
+            var homeBar = Res(isInverted ? "AwayBarBrush" : "HomeBarBrush");
+            var awayBar = Res(isInverted ? "HomeBarBrush" : "AwayBarBrush");
+            var homeValue = Res(isInverted ? "AwayValueBrush" : "HomeValueBrush");
+            var awayValue = Res(isInverted ? "HomeValueBrush" : "AwayValueBrush");
+
+            // Category pill
+            var (catBgKey, catFgKey) = category switch
+            {
+                "Attack" => ("CatAttackBg", "CatAttackFg"),
+                "Defense" => ("CatDefenseBg", "CatDefenseFg"),
+                "Form" => ("CatFormBg", "CatFormFg"),
+                "Momentum" => ("CatMomentumBg", "CatMomentumFg"),
+                _ => ("BarTrackBrush", "MaterialDesignBody"),
+            };
+
+            // Delta pill: "better for home" depends on inversion and sign
+            var homeAdvantage = isInverted ? diff < 0 : diff > 0;
+            var awayAdvantage = isInverted ? diff > 0 : diff < 0;
+
+            string deltaBgKey, deltaFgKey;
+            PackIconKind deltaIcon;
+            if (Math.Abs(diff) < 1e-4f) { deltaBgKey = "DeltaNeuBg"; deltaFgKey = "DeltaNeuFg"; deltaIcon = PackIconKind.MinusThick; }
+            else if (homeAdvantage) { deltaBgKey = "DeltaPosBg"; deltaFgKey = "DeltaPosFg"; deltaIcon = PackIconKind.TrendingUp; }
+            else { deltaBgKey = "DeltaNegBg"; deltaFgKey = "DeltaNegFg"; deltaIcon = PackIconKind.TrendingDown; }
+
+            var diffStr = diff.ToString("+0.##;-0.##;0", System.Globalization.CultureInfo.InvariantCulture);
+
+            return new FeatureRow
+            {
+                Metric = name,
+                Description = desc,
+                Category = category,
+                Icon = icon,
+                Home = home,
+                Away = away,
+                Diff = diff,
+                DiffText = diffStr,
+                HomeFillStar = new GridLength(Math.Max(homeRatio, 0.001), GridUnitType.Star),
+                HomeEmptyStar = new GridLength(Math.Max(1 - homeRatio, 0.001), GridUnitType.Star),
+                AwayFillStar = new GridLength(Math.Max(awayRatio, 0.001), GridUnitType.Star),
+                AwayEmptyStar = new GridLength(Math.Max(1 - awayRatio, 0.001), GridUnitType.Star),
+                HomeBarBrush = homeBar,
+                AwayBarBrush = awayBar,
+                HomeValueBrush = homeValue,
+                AwayValueBrush = awayValue,
+                CategoryBgBrush = Res(catBgKey),
+                CategoryFgBrush = Res(catFgKey),
+                DeltaBg = Res(deltaBgKey),
+                DeltaFg = Res(deltaFgKey),
+                DeltaIcon = deltaIcon,
+            };
+        }
+
+        return new List<FeatureRow>
+        {
+            Make("Avg Goals For",     "Mean goals scored, last 5 matches", "Attack",
+                 PackIconKind.Soccer,
+                 f.HomeAvgGoalsFor, f.AwayAvgGoalsFor, f.AvgGoalsForDiff),
+            Make("Avg Goals Against", "Goals conceded — lower is better",   "Defense",
+                 PackIconKind.ShieldHalfFull,
+                 f.HomeAvgGoalsAgainst, f.AwayAvgGoalsAgainst, f.AvgGoalsAgainstDiff,
+                 isInverted: true),
+            Make("Points Per Game",   "Season pace (3 for win, 1 for draw)", "Form",
+                 PackIconKind.Trophy,
+                 f.HomePointsPerGame, f.AwayPointsPerGame, f.PointsPerGameDiff),
+            Make("Win Rate",          "Share of matches won in recent window", "Form",
+                 PackIconKind.Percent,
+                 f.HomeWinRate, f.AwayWinRate, f.WinRateDiff),
+            Make("Goal-Diff Differential", "Net momentum — Home GD minus Away GD", "Momentum",
+                 PackIconKind.TrendingUp,
+                 f.GoalDiffDiff, 0f, f.GoalDiffDiff),
+        };
     }
 }

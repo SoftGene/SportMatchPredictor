@@ -190,120 +190,212 @@
                                   Margin="0,0,0,20"
                                   SelectionChanged="SeasonCombo_SelectionChanged"/>
 
-                        <TextBlock Text="HOME TEAM"
-                                   FontSize="10" FontWeight="Medium"
-                                   Opacity="0.5" Margin="0,0,0,6"/>
-                        <Grid>
-                            <ComboBox x:Name="HomeTeamCombo"
-                                      IsEditable="True"
-                                      TextSearch.TextPath="TeamLongName"
-                                      ItemTemplate="{StaticResource TeamItemTemplate}"
-                                      materialDesign:HintAssist.Hint="Select home team"
-                                      Margin="0,0,0,0">
-                                <ComboBox.Style>
-                                    <Style TargetType="ComboBox" BasedOn="{StaticResource SelectionComboBoxStyle}">
-                                        <Setter Property="Padding" Value="32,8,8,8"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, RelativeSource={RelativeSource Self}}"
-                                                         Value="{x:Null}">
-                                                <Setter Property="Padding" Value="8,8,8,8"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ComboBox.Style>
-                            </ComboBox>
-                            <Image Width="24" Height="24"
-                                   HorizontalAlignment="Left" VerticalAlignment="Center"
-                                   Margin="6,0,0,0"
-                                   IsHitTestVisible="False"
-                                   RenderOptions.BitmapScalingMode="HighQuality">
-                                <Image.Style>
-                                    <Style TargetType="Image">
-                                        <Setter Property="Source"
-                                                Value="{Binding SelectedItem.LogoPath, ElementName=HomeTeamCombo, Converter={StaticResource PathToImageSourceConverter}}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, ElementName=HomeTeamCombo}"
-                                                         Value="{x:Null}">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Image.Style>
-                            </Image>
-                        </Grid>
+                        <!-- Hidden ComboBoxes — kept for logic compatibility -->
+                        <ComboBox x:Name="HomeTeamCombo"
+          Visibility="Collapsed"
+          IsEditable="True"
+          TextSearch.TextPath="TeamLongName"
+          ItemTemplate="{StaticResource TeamItemTemplate}"/>
+                        <ComboBox x:Name="AwayTeamCombo"
+          Visibility="Collapsed"
+          IsEditable="True"
+          TextSearch.TextPath="TeamLongName"
+          ItemTemplate="{StaticResource TeamItemTemplate}"/>
 
-                        <!-- VS divider -->
-                        <Grid Margin="0,10,0,10">
+                        <!-- Team poster cards -->
+                        <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Rectangle Grid.Column="0" Height="1"
-                                       VerticalAlignment="Center"
-                                       Fill="{DynamicResource MaterialDesignDivider}"/>
-                            <Button Grid.Column="1"
-                                    x:Name="SwapBtn"
-                                    Click="SwapBtn_Click"
-                                    Width="38"
-                                    Height="38"
-                                    Margin="10,0"
-                                    Background="{DynamicResource PrimaryHueMidBrush}"
-                                    BorderThickness="0"
-                                    Padding="0"
-                                    materialDesign:ButtonAssist.CornerRadius="20"
-                                    materialDesign:ElevationAssist.Elevation="Dp2"
-                                    ToolTip="Swap teams">
-                                <materialDesign:PackIcon Kind="SwapHorizontal"
-                                                         Width="20" Height="20"
-                                                         Foreground="White"
-                                                         HorizontalAlignment="Center"
-                                                         VerticalAlignment="Center"/>
+
+                            <!-- Home team card -->
+                            <Button Grid.Column="0"
+            x:Name="HomeTeamCard"
+            Click="HomeTeamCard_Click"
+            Padding="0"
+            BorderThickness="1.5"
+            BorderBrush="{DynamicResource AppOutlineBrush}"
+            Background="{DynamicResource MaterialDesignPaper}"
+            materialDesign:ButtonAssist.CornerRadius="12"
+            materialDesign:ElevationAssist.Elevation="Dp1"
+            Height="180"
+            Cursor="Hand">
+                                <Grid>
+                                    <!-- Empty state -->
+                                    <StackPanel x:Name="HomeEmptyState"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center">
+                                        <materialDesign:PackIcon Kind="Soccer"
+                                         Width="36" Height="36"
+                                         HorizontalAlignment="Center"
+                                         Foreground="{DynamicResource MaterialDesignDivider}"
+                                         Margin="0,0,0,8"/>
+                                        <TextBlock Text="Select team"
+                           FontSize="12"
+                           Opacity="0.4"
+                           HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Tap to browse"
+                           FontSize="10"
+                           Opacity="0.3"
+                           HorizontalAlignment="Center"
+                           Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <!-- Selected state -->
+                                    <StackPanel x:Name="HomeSelectedState"
+                        Visibility="Collapsed"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Margin="10">
+                                        <Grid Width="56" Height="56"
+                      HorizontalAlignment="Center"
+                      Margin="0,0,0,10">
+                                            <Border x:Name="HomeBadge"
+                            CornerRadius="28"
+                            Background="{DynamicResource SecondaryHueMidBrush}">
+                                                <TextBlock x:Name="HomeInitial"
+                                   FontSize="20" FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryHueDarkBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                                            </Border>
+                                            <Image x:Name="HomeLogoCard"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           Visibility="Collapsed"/>
+                                        </Grid>
+                                        <TextBlock x:Name="HomeTeamName"
+                           FontSize="12" FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           MaxWidth="110"/>
+                                        <Border Background="{DynamicResource PrimaryHueMidBrush}"
+                        CornerRadius="4"
+                        Padding="8,3"
+                        Margin="0,6,0,0"
+                        HorizontalAlignment="Center">
+                                            <TextBlock Text="Change"
+                               Foreground="White"
+                               FontSize="10"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
                             </Button>
-                            <Rectangle Grid.Column="2" Height="1"
-                                       VerticalAlignment="Center"
-                                       Fill="{DynamicResource MaterialDesignDivider}"/>
+
+                            <!-- Swap button -->
+                            <Button Grid.Column="1"
+            x:Name="SwapBtn"
+            Click="SwapBtn_Click"
+            Width="38" Height="38"
+            Margin="8,0"
+            Background="{DynamicResource PrimaryHueMidBrush}"
+            BorderThickness="0"
+            Padding="0"
+            materialDesign:ButtonAssist.CornerRadius="20"
+            materialDesign:ElevationAssist.Elevation="Dp2"
+            ToolTip="Swap teams">
+                                <materialDesign:PackIcon Kind="SwapHorizontal"
+                                 Width="20" Height="20"
+                                 Foreground="White"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center"/>
+                            </Button>
+
+                            <!-- Away team card -->
+                            <Button Grid.Column="2"
+            x:Name="AwayTeamCard"
+            Click="AwayTeamCard_Click"
+            Padding="0"
+            BorderThickness="1.5"
+            BorderBrush="{DynamicResource AppOutlineBrush}"
+            Background="{DynamicResource MaterialDesignPaper}"
+            materialDesign:ButtonAssist.CornerRadius="12"
+            materialDesign:ElevationAssist.Elevation="Dp1"
+            Height="180"
+            Cursor="Hand">
+                                <Grid>
+                                    <!-- Empty state -->
+                                    <StackPanel x:Name="AwayEmptyState"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center">
+                                        <materialDesign:PackIcon Kind="Soccer"
+                                         Width="36" Height="36"
+                                         HorizontalAlignment="Center"
+                                         Foreground="{DynamicResource MaterialDesignDivider}"
+                                         Margin="0,0,0,8"/>
+                                        <TextBlock Text="Select team"
+                           FontSize="12"
+                           Opacity="0.4"
+                           HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Tap to browse"
+                           FontSize="10"
+                           Opacity="0.3"
+                           HorizontalAlignment="Center"
+                           Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <!-- Selected state -->
+                                    <StackPanel x:Name="AwaySelectedState"
+                        Visibility="Collapsed"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Margin="10">
+                                        <Grid Width="56" Height="56"
+                      HorizontalAlignment="Center"
+                      Margin="0,0,0,10">
+                                            <Border x:Name="AwayBadgeCard"
+                            CornerRadius="28"
+                            Background="{DynamicResource SecondaryHueMidBrush}">
+                                                <TextBlock x:Name="AwayInitial"
+                                   FontSize="20" FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryHueDarkBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                                            </Border>
+                                            <Image x:Name="AwayLogoCard"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           Visibility="Collapsed"/>
+                                        </Grid>
+                                        <TextBlock x:Name="AwayTeamName"
+                           FontSize="12" FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           MaxWidth="110"/>
+                                        <Border Background="{DynamicResource PrimaryHueMidBrush}"
+                        CornerRadius="4"
+                        Padding="8,3"
+                        Margin="0,6,0,0"
+                        HorizontalAlignment="Center">
+                                            <TextBlock Text="Change"
+                               Foreground="White"
+                               FontSize="10"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+
                         </Grid>
 
-                        <TextBlock Text="AWAY TEAM"
-                                   FontSize="10" FontWeight="Medium"
-                                   Opacity="0.5" Margin="0,0,0,6"/>
-                        <Grid Margin="0,0,0,24">
-                            <ComboBox x:Name="AwayTeamCombo"
-                                      IsEditable="True"
-                                      TextSearch.TextPath="TeamLongName"
-                                      ItemTemplate="{StaticResource TeamItemTemplate}"
-                                      materialDesign:HintAssist.Hint="Select away team">
-                                <ComboBox.Style>
-                                    <Style TargetType="ComboBox" BasedOn="{StaticResource SelectionComboBoxStyle}">
-                                        <Setter Property="Padding" Value="32,8,8,8"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, RelativeSource={RelativeSource Self}}"
-                                                         Value="{x:Null}">
-                                                <Setter Property="Padding" Value="8,8,8,8"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ComboBox.Style>
-                            </ComboBox>
-                            <Image Width="24" Height="24"
-                                   HorizontalAlignment="Left" VerticalAlignment="Center"
-                                   Margin="6,0,0,0"
-                                   IsHitTestVisible="False"
-                                   RenderOptions.BitmapScalingMode="HighQuality">
-                                <Image.Style>
-                                    <Style TargetType="Image">
-                                        <Setter Property="Source"
-                                                Value="{Binding SelectedItem.LogoPath, ElementName=AwayTeamCombo, Converter={StaticResource PathToImageSourceConverter}}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, ElementName=AwayTeamCombo}"
-                                                         Value="{x:Null}">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Image.Style>
-                            </Image>
+                        <!-- Labels -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="54"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+               Text="HOME TEAM"
+               FontSize="10" FontWeight="Medium"
+               Opacity="0.5"
+               HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="2"
+               Text="AWAY TEAM"
+               FontSize="10" FontWeight="Medium"
+               Opacity="0.5"
+               HorizontalAlignment="Center"/>
                         </Grid>
 
                         <!-- Predict — primary button -->
@@ -340,15 +432,192 @@
                         <ListBox x:Name="HistoryList"
                                  BorderThickness="0"
                                  Background="Transparent"
-                                 FontSize="11"
                                  Padding="0"
+                                 SelectionChanged="HistoryList_SelectionChanged"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemContainerStyle>
+                                <!-- Neutralise the default selection highlight -->
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin"  Value="0,0,0,6"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Focusable" Value="True"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <ContentPresenter/>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding}"
-                                               FontSize="11"
-                                               TextTrimming="CharacterEllipsis"
-                                               ToolTip="{Binding}"/>
+                                    <Border Cursor="Hand"
+                                            Background="{DynamicResource CardSurfaceBrush}"
+                                            BorderBrush="{DynamicResource MaterialDesignDivider}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            RenderTransformOrigin="0.5,0.5"
+                                            ToolTip="Click to re-run this prediction">
+                                        <Border.RenderTransform>
+                                            <TranslateTransform Y="0"/>
+                                        </Border.RenderTransform>
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Style.Triggers>
+                                                    <EventTrigger RoutedEvent="MouseEnter">
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                                 To="-1" Duration="0:0:0.18"/>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </EventTrigger>
+                                                    <EventTrigger RoutedEvent="MouseLeave">
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                                 To="0" Duration="0:0:0.22"/>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </EventTrigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="4"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Outcome stripe -->
+                                            <Border Grid.Column="0"
+                                                    Background="{Binding OutcomeBrush}"
+                                                    CornerRadius="8,0,0,8"/>
+
+                                            <!-- Content -->
+                                            <Grid Grid.Column="1" Margin="10,8,10,8">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- Row 1: Home [logo] vs [logo] Away -->
+                                                <Grid Grid.Row="0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- HOME block -->
+                                                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                        <Grid Width="18" Height="18" Margin="0,0,6,0">
+                                                            <Border CornerRadius="9"
+                                                                    Background="{DynamicResource PrimaryHueLightBrush}">
+                                                                <Border.Style>
+                                                                    <Style TargetType="Border">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding HomeLogo}" Value="{x:Null}">
+                                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Border.Style>
+                                                                <TextBlock Text="{Binding HomeInitial}"
+                                                                           FontSize="9" FontWeight="Bold"
+                                                                           Foreground="{DynamicResource PrimaryHueDarkBrush}"
+                                                                           HorizontalAlignment="Center"
+                                                                           VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <Image Source="{Binding HomeLogo, Converter={StaticResource PathToImageSourceConverter}}"
+                                                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                        </Grid>
+                                                        <TextBlock Text="{Binding HomeShort}"
+                                                                   FontSize="11" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource MaterialDesignBody}"
+                                                                   VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+
+                                                    <!-- vs -->
+                                                    <TextBlock Grid.Column="1" Text="vs"
+                                                               FontSize="9" FontStyle="Italic"
+                                                               Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="6,0,6,0"/>
+
+                                                    <!-- AWAY block -->
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding AwayShort}"
+                                                                   FontSize="11" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource MaterialDesignBody}"
+                                                                   VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Margin="0,0,6,0"/>
+                                                        <Grid Width="18" Height="18">
+                                                            <Border CornerRadius="9"
+                                                                    Background="{DynamicResource PrimaryHueLightBrush}">
+                                                                <Border.Style>
+                                                                    <Style TargetType="Border">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding AwayLogo}" Value="{x:Null}">
+                                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Border.Style>
+                                                                <TextBlock Text="{Binding AwayInitial}"
+                                                                           FontSize="9" FontWeight="Bold"
+                                                                           Foreground="{DynamicResource PrimaryHueDarkBrush}"
+                                                                           HorizontalAlignment="Center"
+                                                                           VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <Image Source="{Binding AwayLogo, Converter={StaticResource PathToImageSourceConverter}}"
+                                                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <!-- Row 2: outcome · confidence · season -->
+                                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
+                                                    <Ellipse Width="7" Height="7"
+                                                             Fill="{Binding OutcomeBrush}"
+                                                             VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding OutcomeText}"
+                                                               FontSize="10" FontWeight="SemiBold"
+                                                               Foreground="{Binding OutcomeBrush}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="5,0,0,0"/>
+                                                    <Border Background="{DynamicResource SurfaceTintBrush}"
+                                                            BorderBrush="{DynamicResource MaterialDesignDivider}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="8"
+                                                            Padding="6,1"
+                                                            Margin="8,0,0,0"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding ConfidenceText}"
+                                                                   FontSize="9" FontWeight="Bold"
+                                                                   Foreground="{DynamicResource MaterialDesignBody}"/>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding Season}"
+                                                               FontSize="9" Opacity="0.55"
+                                                               Foreground="{DynamicResource MaterialDesignBody}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="8,0,0,0"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
@@ -665,87 +934,254 @@
                                 BorderThickness="1"
                                 Background="{DynamicResource MaterialDesignPaper}">
                             <TabControl Style="{StaticResource MaterialDesignTabControl}"
-                                        materialDesign:ColorZoneAssist.Mode="PrimaryMid"
+                                        materialDesign:ColorZoneAssist.Mode="Custom"
+                                        materialDesign:ColorZoneAssist.Foreground="{DynamicResource PrimaryHueMidBrush}"
                                         BorderBrush="{DynamicResource MaterialDesignDivider}"
+                                        Background="Transparent"
                                         ClipToBounds="True">
+                                <TabControl.Resources>
+                                    <Style TargetType="TabItem" BasedOn="{StaticResource GreenTabItemStyle}"/>
+                                </TabControl.Resources>
 
                                 <!-- ── Tab 1: Computed Features ── -->
                                 <TabItem Header="Computed Features">
-                                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
-                                        <StackPanel>
-                                            <TextBlock Text="Feature Summary"
-                                                       FontSize="12" FontWeight="SemiBold"
-                                                       Margin="0,0,0,2"/>
-                                            <TextBlock Text="Generated statistics used by the model"
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled"
+                                                  Margin="0,8,0,0"
+                                                  Style="{StaticResource TabContentFadeInStyle}">
+                                        <StackPanel Margin="4,0,4,12">
+                                            <StackPanel.Resources>
+                                                <!-- Force themed foreground so text is readable
+                                                     in both light and dark themes -->
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground"
+                                                            Value="{DynamicResource MaterialDesignBody}"/>
+                                                </Style>
+                                            </StackPanel.Resources>
+
+                                            <!-- Card header -->
+                                            <DockPanel LastChildFill="True" Margin="16,10,16,2">
+                                                <TextBlock DockPanel.Dock="Left"
+                                                           Text="Feature Summary"
+                                                           FontSize="15" FontWeight="SemiBold"/>
+                                            </DockPanel>
+                                            <TextBlock Text="Head-to-head statistics engineered for this match"
                                                        FontSize="11" Opacity="0.55"
-                                                       Margin="0,0,0,10"/>
-                                            <DataGrid x:Name="FeaturesGrid"
-                                                      Style="{StaticResource MaterialDesignDataGrid}"
-                                                      AutoGenerateColumns="False"
-                                                      IsReadOnly="True"
-                                                      HeadersVisibility="Column"
-                                                      Background="Transparent"
-                                                      BorderThickness="0"
-                                                      CanUserResizeColumns="False"
-                                                      CanUserReorderColumns="False"
-                                                      AlternationCount="0"
-                                                      GridLinesVisibility="Horizontal"
-                                                      SelectionMode="Single"
-                                                      SelectionUnit="FullRow"
-                                                      HorizontalGridLinesBrush="{DynamicResource MaterialDesignDivider}"
-                                                      HorizontalScrollBarVisibility="Disabled">
-                                                <DataGrid.RowStyle>
-                                                    <Style TargetType="DataGridRow">
-                                                        <Setter Property="IsHitTestVisible" Value="False"/>
-                                                    </Style>
-                                                </DataGrid.RowStyle>
-                                                <DataGrid.Columns>
-                                                    <DataGridTextColumn Header="Metric"
-                                                                        Binding="{Binding Metric}"
-                                                                        FontWeight="Medium"
-                                                                        Width="*"/>
-                                                    <DataGridTextColumn Header="Home"
-                                                                        Binding="{Binding Home, StringFormat={}{0:0.###}}"
-                                                                        Width="90">
-                                                        <DataGridTextColumn.ElementStyle>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="HorizontalAlignment" Value="Right"/>
-                                                                <Setter Property="Margin" Value="0,0,12,0"/>
-                                                            </Style>
-                                                        </DataGridTextColumn.ElementStyle>
-                                                    </DataGridTextColumn>
-                                                    <DataGridTextColumn Header="Away"
-                                                                        Binding="{Binding Away, StringFormat={}{0:0.###}}"
-                                                                        Width="90">
-                                                        <DataGridTextColumn.ElementStyle>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="HorizontalAlignment" Value="Right"/>
-                                                                <Setter Property="Margin" Value="0,0,12,0"/>
-                                                            </Style>
-                                                        </DataGridTextColumn.ElementStyle>
-                                                    </DataGridTextColumn>
-                                                    <DataGridTextColumn Header="Diff"
-                    Binding="{Binding Diff, StringFormat={}{0:0.###}}"
-                    Width="90"
-                    CanUserSort="False">
-                                                        <DataGridTextColumn.ElementStyle>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="HorizontalAlignment" Value="Right"/>
-                                                                <Setter Property="Margin" Value="0,0,12,0"/>
-                                                                <Setter Property="FontWeight" Value="Bold"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Diff, Converter={StaticResource GreaterThanZeroConverter}}" Value="True">
-                                                                        <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Diff, Converter={StaticResource LessThanZeroConverter}}" Value="True">
-                                                                        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </DataGridTextColumn.ElementStyle>
-                                                    </DataGridTextColumn>
-                                                </DataGrid.Columns>
-                                            </DataGrid>
+                                                       Margin="16,0,16,8"/>
+
+                                            <!-- Column hint strip -->
+                                            <Border Background="{DynamicResource SurfaceTintBrush}"
+                                                    Margin="16,4,16,0" Padding="0,8"
+                                                    CornerRadius="6">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="48"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="110"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid Grid.Column="1" Margin="14,0,14,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="40"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="2"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="40"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0"
+                                                                   Text="HOME" FontSize="10" FontWeight="Bold"
+                                                                   Foreground="{DynamicResource HomeValueBrush}"
+                                                                   HorizontalAlignment="Right"/>
+                                                        <TextBlock Grid.Column="4"
+                                                                   Text="AWAY" FontSize="10" FontWeight="Bold"
+                                                                   Foreground="{DynamicResource AwayValueBrush}"
+                                                                   HorizontalAlignment="Left"/>
+                                                    </Grid>
+                                                    <TextBlock Grid.Column="2" Text="Δ vs HOME"
+                                                               FontSize="10" FontWeight="Bold"
+                                                               Opacity="0.6"
+                                                               HorizontalAlignment="Right"
+                                                               Margin="0,0,12,0"/>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Metric rows -->
+                                            <ItemsControl x:Name="FeaturesGrid"
+                                                          Margin="16,4,16,0"
+                                                          Background="Transparent"
+                                                          BorderThickness="0">
+                                                <ItemsControl.GroupStyle>
+                                                    <GroupStyle>
+                                                        <GroupStyle.HeaderTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Name}"
+                                                                           FontSize="10" FontWeight="Bold"
+                                                                           Foreground="{DynamicResource MaterialDesignBody}"
+                                                                           Opacity="0.7"
+                                                                           Margin="4,8,0,2"
+                                                                           Typography.Capitals="AllSmallCaps"/>
+                                                            </DataTemplate>
+                                                        </GroupStyle.HeaderTemplate>
+                                                    </GroupStyle>
+                                                </ItemsControl.GroupStyle>
+
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Padding="4,7"
+                                                                BorderBrush="{DynamicResource MaterialDesignDivider}"
+                                                                BorderThickness="0,0,0,1"
+                                                                Style="{StaticResource MetricRowHoverStyle}">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="48"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="110"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <!-- Icon chip -->
+                                                                <Border Grid.Column="0"
+                                                                        Width="40" Height="40"
+                                                                        CornerRadius="20"
+                                                                        Background="{Binding CategoryBgBrush}"
+                                                                        VerticalAlignment="Top">
+                                                                    <materialDesign:PackIcon Kind="{Binding Icon}"
+                                                                                             Width="20" Height="20"
+                                                                                             Foreground="{Binding CategoryFgBrush}"
+                                                                                             HorizontalAlignment="Center"
+                                                                                             VerticalAlignment="Center"/>
+                                                                </Border>
+
+                                                                <!-- Body -->
+                                                                <StackPanel Grid.Column="1" Margin="14,0,14,0">
+                                                                    <DockPanel LastChildFill="False">
+                                                                        <TextBlock DockPanel.Dock="Left"
+                                                                                   Text="{Binding Metric}"
+                                                                                   FontSize="14" FontWeight="SemiBold"
+                                                                                   Foreground="{DynamicResource MaterialDesignBody}"/>
+                                                                        <Border DockPanel.Dock="Right"
+                                                                                Background="{Binding CategoryBgBrush}"
+                                                                                CornerRadius="10" Padding="8,2"
+                                                                                VerticalAlignment="Center">
+                                                                            <TextBlock Text="{Binding Category}"
+                                                                                       FontSize="10" FontWeight="Medium"
+                                                                                       Foreground="{Binding CategoryFgBrush}"/>
+                                                                        </Border>
+                                                                    </DockPanel>
+                                                                    <TextBlock Text="{Binding Description}"
+                                                                               FontSize="11"
+                                                                               Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                                               Margin="0,1,0,6"/>
+
+                                                                    <!-- Diverging bar -->
+                                                                    <Grid Height="22">
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="40"/>
+                                                                            <ColumnDefinition Width="*"/>
+                                                                            <ColumnDefinition Width="2"/>
+                                                                            <ColumnDefinition Width="*"/>
+                                                                            <ColumnDefinition Width="40"/>
+                                                                        </Grid.ColumnDefinitions>
+
+                                                                        <TextBlock Grid.Column="0"
+                                                                                   Text="{Binding HomeText}"
+                                                                                   FontSize="12" FontWeight="SemiBold"
+                                                                                   Foreground="{Binding HomeValueBrush}"
+                                                                                   HorizontalAlignment="Right"
+                                                                                   VerticalAlignment="Center"
+                                                                                   Margin="0,0,8,0"/>
+
+                                                                        <!-- HOME track -->
+                                                                        <Border Grid.Column="1"
+                                                                                Background="{DynamicResource BarTrackBrush}"
+                                                                                CornerRadius="5,0,0,5"
+                                                                                Height="9"
+                                                                                VerticalAlignment="Center">
+                                                                            <Grid>
+                                                                                <Grid.ColumnDefinitions>
+                                                                                    <ColumnDefinition Width="{Binding HomeEmptyStar}"/>
+                                                                                    <ColumnDefinition Width="{Binding HomeFillStar}"/>
+                                                                                </Grid.ColumnDefinitions>
+                                                                                <Border Grid.Column="1"
+                                                                                        Background="{Binding HomeBarBrush}"
+                                                                                        CornerRadius="5,0,0,5"/>
+                                                                            </Grid>
+                                                                        </Border>
+
+                                                                        <!-- Axis -->
+                                                                        <Rectangle Grid.Column="2"
+                                                                                   Width="2" Height="16"
+                                                                                   Fill="{DynamicResource BarAxisBrush}"
+                                                                                   VerticalAlignment="Center"/>
+
+                                                                        <!-- AWAY track -->
+                                                                        <Border Grid.Column="3"
+                                                                                Background="{DynamicResource BarTrackBrush}"
+                                                                                CornerRadius="0,5,5,0"
+                                                                                Height="9"
+                                                                                VerticalAlignment="Center">
+                                                                            <Grid>
+                                                                                <Grid.ColumnDefinitions>
+                                                                                    <ColumnDefinition Width="{Binding AwayFillStar}"/>
+                                                                                    <ColumnDefinition Width="{Binding AwayEmptyStar}"/>
+                                                                                </Grid.ColumnDefinitions>
+                                                                                <Border Grid.Column="0"
+                                                                                        Background="{Binding AwayBarBrush}"
+                                                                                        CornerRadius="0,5,5,0"/>
+                                                                            </Grid>
+                                                                        </Border>
+
+                                                                        <TextBlock Grid.Column="4"
+                                                                                   Text="{Binding AwayText}"
+                                                                                   FontSize="12" FontWeight="SemiBold"
+                                                                                   Foreground="{Binding AwayValueBrush}"
+                                                                                   HorizontalAlignment="Left"
+                                                                                   VerticalAlignment="Center"
+                                                                                   Margin="8,0,0,0"/>
+                                                                    </Grid>
+                                                                </StackPanel>
+
+                                                                <!-- Delta pill -->
+                                                                <Border Grid.Column="2"
+                                                                        VerticalAlignment="Center"
+                                                                        HorizontalAlignment="Right"
+                                                                        Background="{Binding DeltaBg}"
+                                                                        CornerRadius="14"
+                                                                        Padding="10,6">
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <materialDesign:PackIcon Kind="{Binding DeltaIcon}"
+                                                                                                 Width="14" Height="14"
+                                                                                                 Foreground="{Binding DeltaFg}"
+                                                                                                 VerticalAlignment="Center"/>
+                                                                        <TextBlock Text="{Binding DiffText}"
+                                                                                   Margin="4,0,0,0"
+                                                                                   FontSize="12" FontWeight="SemiBold"
+                                                                                   Foreground="{Binding DeltaFg}"/>
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <!-- Legend -->
+                                            <DockPanel LastChildFill="True" Margin="20,14,20,6">
+                                                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                                                    <Ellipse Width="9" Height="9" Fill="{DynamicResource HomeValueBrush}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="Home advantage"
+                                                               FontSize="11" Opacity="0.7"
+                                                               Margin="6,0,16,0" VerticalAlignment="Center"/>
+                                                    <Ellipse Width="9" Height="9" Fill="{DynamicResource AwayValueBrush}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="Away advantage"
+                                                               FontSize="11" Opacity="0.7"
+                                                               Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                <TextBlock DockPanel.Dock="Right"
+                                                           Text="Bars normalised per metric"
+                                                           FontSize="11" Opacity="0.55"
+                                                           HorizontalAlignment="Right"
+                                                           VerticalAlignment="Center"/>
+                                            </DockPanel>
+
                                             <TextBox x:Name="FeaturesDebug" Visibility="Collapsed"/>
                                         </StackPanel>
                                     </ScrollViewer>
@@ -753,139 +1189,277 @@
 
                                 <!-- ── Tab 2: About Model ── -->
                                 <TabItem Header="About Model">
-                                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
-                                        <StackPanel>
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  Margin="0,8,0,0"
+                                                  Style="{StaticResource TabContentFadeInStyle}">
+                                        <StackPanel Margin="16,8,16,16">
+                                            <StackPanel.Resources>
+                                                <!-- Force all inner TextBlocks to use themed foreground
+                                                     so they stay readable in both light and dark themes -->
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground"
+                                                            Value="{DynamicResource MaterialDesignBody}"/>
+                                                </Style>
+                                            </StackPanel.Resources>
 
-                                            <!-- Two info cards in a row -->
-                                            <Grid Margin="0,0,0,10">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
+                                            <!-- Intro -->
+                                            <TextBlock Text="About this model"
+                                                       FontSize="16" FontWeight="SemiBold"/>
+                                            <TextBlock Text="How the prediction is built, trained and evaluated."
+                                                       FontSize="12" Opacity="0.55"
+                                                       Margin="0,2,0,14"/>
 
-                                                <!-- Algorithm card -->
-                                                <materialDesign:Card Grid.Column="0"
-                         Padding="16"
-                         Margin="0,0,6,0"
-                         UniformCornerRadius="8"
-                         materialDesign:ElevationAssist.Elevation="Dp1">
-                                                    <StackPanel VerticalAlignment="Center"
-                    HorizontalAlignment="Center">
+                                            <!-- 2x2 Fact tiles -->
+                                            <UniformGrid Rows="2" Columns="2">
 
-                                                        <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        Margin="0,0,0,16">
-                                                            <materialDesign:PackIcon Kind="Brain"
-                                         Width="18" Height="18"
-                                         VerticalAlignment="Center"
-                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                         Margin="0,0,8,0"/>
-                                                            <TextBlock Text="Algorithm"
-                           FontSize="13" FontWeight="SemiBold"
-                           VerticalAlignment="Center"/>
+                                                <!-- TILE 1: ALGORITHM -->
+                                                <materialDesign:Card Style="{StaticResource InfoTileStyle}"
+                                                                     Margin="0,0,7,7">
+                                                    <StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                                            <Border Width="36" Height="36" CornerRadius="18"
+                                                                    Background="{DynamicResource CatAttackBg}">
+                                                                <materialDesign:PackIcon Kind="Brain"
+                                                                                         Width="18" Height="18"
+                                                                                         Foreground="{DynamicResource CatAttackFg}"
+                                                                                         HorizontalAlignment="Center"
+                                                                                         VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <TextBlock Text="ALGORITHM"
+                                                                       FontSize="10" FontWeight="Bold"
+                                                                       Opacity="0.55"
+                                                                       VerticalAlignment="Center"
+                                                                       Margin="12,0,0,0"
+                                                                       Typography.Capitals="AllSmallCaps"/>
                                                         </StackPanel>
-
-                                                        <!-- Icon badge -->
-                                                        <Border Width="100" Height="100"
-                    CornerRadius="50"
-                    Background="{DynamicResource SecondaryHueMidBrush}"
-                    HorizontalAlignment="Center"
-                    Margin="0,0,0,16">
-                                                            <materialDesign:PackIcon Kind="TuneVariant"
-                                         Width="48" Height="48"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center"
-                                         Foreground="{DynamicResource PrimaryHueMidBrush}"/>
-                                                        </Border>
-
                                                         <TextBlock Text="OVA + FastTree"
-                       FontSize="15" FontWeight="Bold"
-                       HorizontalAlignment="Center"
-                       Margin="0,0,0,8"/>
-                                                        <TextBlock Text="ML.NET · .NET 8"
-                       FontSize="12" Opacity="0.55"
-                       HorizontalAlignment="Center"
-                       Margin="0,0,0,4"/>
-                                                        <TextBlock Text="14 features · last 5 games"
-                       FontSize="12" Opacity="0.55"
-                       HorizontalAlignment="Center"
-                       Margin="0,0,0,4"/>
-                                                        <TextBlock Text="Time-based split · 2015/16"
-                       FontSize="12" Opacity="0.55"
-                       HorizontalAlignment="Center"/>
+                                                                   FontSize="18" FontWeight="SemiBold"/>
+                                                        <TextBlock TextWrapping="Wrap"
+                                                                   FontSize="12" Opacity="0.6"
+                                                                   Margin="0,4,0,0"
+                                                                   Text="One-vs-All meta-learner over gradient-boosted decision trees. Outputs calibrated softmax over three classes."/>
                                                     </StackPanel>
                                                 </materialDesign:Card>
 
-                                                <!-- Performance card -->
-                                                <materialDesign:Card Grid.Column="1"
-                         Padding="16"
-                         Margin="6,0,0,0"
-                         UniformCornerRadius="8"
-                         materialDesign:ElevationAssist.Elevation="Dp1">
-                                                    <StackPanel VerticalAlignment="Center"
-                    HorizontalAlignment="Center">
-
-                                                        <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        Margin="0,0,0,16">
-                                                            <materialDesign:PackIcon Kind="ChartBar"
-                                         Width="18" Height="18"
-                                         VerticalAlignment="Center"
-                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                         Margin="0,0,8,0"/>
-                                                            <TextBlock Text="Performance"
-                           FontSize="13" FontWeight="SemiBold"
-                           VerticalAlignment="Center"/>
+                                                <!-- TILE 2: TRAINING DATA -->
+                                                <materialDesign:Card Style="{StaticResource InfoTileStyle}"
+                                                                     Margin="7,0,0,7">
+                                                    <StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                                            <Border Width="36" Height="36" CornerRadius="18"
+                                                                    Background="{DynamicResource CatDefenseBg}">
+                                                                <materialDesign:PackIcon Kind="DatabaseOutline"
+                                                                                         Width="18" Height="18"
+                                                                                         Foreground="{DynamicResource CatDefenseFg}"
+                                                                                         HorizontalAlignment="Center"
+                                                                                         VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <TextBlock Text="TRAINING DATA"
+                                                                       FontSize="10" FontWeight="Bold"
+                                                                       Opacity="0.55"
+                                                                       VerticalAlignment="Center"
+                                                                       Margin="12,0,0,0"
+                                                                       Typography.Capitals="AllSmallCaps"/>
                                                         </StackPanel>
-
-                                                        <Grid Width="100" Height="100"
-                  HorizontalAlignment="Center"
-                  Margin="0,0,0,16">
-                                                            <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
-                             Value="44.6" Maximum="100"
-                             Width="100" Height="100"
-                             Foreground="{DynamicResource PrimaryHueMidBrush}"/>
-                                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                                <TextBlock Text="44.6%"
-                               FontSize="18" FontWeight="Bold"
-                               HorizontalAlignment="Center"/>
-                                                                <TextBlock Text="Accuracy"
-                               FontSize="10" Opacity="0.55"
-                               HorizontalAlignment="Center"/>
-                                                            </StackPanel>
-                                                        </Grid>
-
-                                                        <TextBlock Text="Baseline: ~45%"
-                       FontSize="12" Opacity="0.55"
-                       HorizontalAlignment="Center"
-                       Margin="0,0,0,4"/>
-                                                        <TextBlock Text="Test: 2015 / 2016"
-                       FontSize="12" Opacity="0.55"
-                       HorizontalAlignment="Center"
-                       Margin="0,0,0,4"/>
-                                                        <TextBlock Text="Away · Draw · Home"
-                       FontSize="12" Opacity="0.55"
-                       HorizontalAlignment="Center"/>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="2008 – 2016"
+                                                                       FontSize="18" FontWeight="SemiBold"/>
+                                                            <TextBlock Text="seasons" FontSize="12"
+                                                                       Opacity="0.6" VerticalAlignment="Bottom"
+                                                                       Margin="6,0,0,3"/>
+                                                        </StackPanel>
+                                                        <TextBlock Text="Time-aware train / validation split across European leagues."
+                                                                   FontSize="12" Opacity="0.6"
+                                                                   TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                                        <WrapPanel Margin="0,10,0,0">
+                                                            <Border Background="{DynamicResource CatDefenseBg}"
+                                                                    CornerRadius="10" Padding="8,2" Margin="0,0,6,4">
+                                                                <TextBlock Text="Time-aware split" FontSize="10"
+                                                                           FontWeight="Medium"
+                                                                           Foreground="{DynamicResource CatDefenseFg}"/>
+                                                            </Border>
+                                                            <Border Background="{DynamicResource CatDefenseBg}"
+                                                                    CornerRadius="10" Padding="8,2" Margin="0,0,6,4">
+                                                                <TextBlock Text="No leakage" FontSize="10"
+                                                                           FontWeight="Medium"
+                                                                           Foreground="{DynamicResource CatDefenseFg}"/>
+                                                            </Border>
+                                                        </WrapPanel>
                                                     </StackPanel>
                                                 </materialDesign:Card>
 
-                                            </Grid>
+                                                <!-- TILE 3: FEATURES -->
+                                                <materialDesign:Card Style="{StaticResource InfoTileStyle}"
+                                                                     Margin="0,7,7,0">
+                                                    <StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                                            <Border Width="36" Height="36" CornerRadius="18"
+                                                                    Background="{DynamicResource CatFormBg}">
+                                                                <materialDesign:PackIcon Kind="TuneVariant"
+                                                                                         Width="18" Height="18"
+                                                                                         Foreground="{DynamicResource CatFormFg}"
+                                                                                         HorizontalAlignment="Center"
+                                                                                         VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <TextBlock Text="FEATURES"
+                                                                       FontSize="10" FontWeight="Bold"
+                                                                       Opacity="0.55"
+                                                                       VerticalAlignment="Center"
+                                                                       Margin="12,0,0,0"
+                                                                       Typography.Capitals="AllSmallCaps"/>
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="14" FontSize="18" FontWeight="SemiBold"/>
+                                                            <TextBlock Text="engineered signals" FontSize="12"
+                                                                       Opacity="0.6" VerticalAlignment="Bottom"
+                                                                       Margin="6,0,0,3"/>
+                                                        </StackPanel>
+                                                        <TextBlock TextWrapping="Wrap"
+                                                                   FontSize="12" Opacity="0.6"
+                                                                   Margin="0,4,0,0"
+                                                                   Text="Rolling-window form, goal-diff trends, head-to-head history, last-5-games aggregates."/>
+                                                    </StackPanel>
+                                                </materialDesign:Card>
 
-                                            <!-- Note -->
-                                            <Border Padding="14"
-                                                    CornerRadius="8"
-                                                    Background="{DynamicResource SecondaryAccentBrush}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <materialDesign:PackIcon Kind="InformationOutline"
-                                                                             Width="16" Height="16"
-                                                                             VerticalAlignment="Top"
-                                                                             Margin="0,1,10,0"
-                                                                             Opacity="0.7"/>
-                                                    <TextBlock TextWrapping="Wrap"
-                                                               FontSize="12"
-                                                               Opacity="0.75"
-                                                               Text="Football outcomes are inherently difficult to predict. A micro accuracy of ~44.6% is competitive given that the naive baseline (always predicting Home Win) achieves ~45%. The model captures relative team form rather than absolute team strength."/>
+                                                <!-- TILE 4: STACK -->
+                                                <materialDesign:Card Style="{StaticResource InfoTileStyle}"
+                                                                     Margin="7,7,0,0">
+                                                    <StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                                            <Border Width="36" Height="36" CornerRadius="18"
+                                                                    Background="{DynamicResource CatMomentumBg}">
+                                                                <materialDesign:PackIcon Kind="CodeTags"
+                                                                                         Width="18" Height="18"
+                                                                                         Foreground="{DynamicResource CatMomentumFg}"
+                                                                                         HorizontalAlignment="Center"
+                                                                                         VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <TextBlock Text="STACK"
+                                                                       FontSize="10" FontWeight="Bold"
+                                                                       Opacity="0.55"
+                                                                       VerticalAlignment="Center"
+                                                                       Margin="12,0,0,0"
+                                                                       Typography.Capitals="AllSmallCaps"/>
+                                                        </StackPanel>
+                                                        <TextBlock Text="ML.NET · .NET 8"
+                                                                   FontSize="18" FontWeight="SemiBold"/>
+                                                        <TextBlock TextWrapping="Wrap"
+                                                                   FontSize="12" Opacity="0.6"
+                                                                   Margin="0,4,0,0">
+                                                            <Run Text="WPF + MaterialDesignInXAML. Model persisted as "/>
+                                                            <Run Text="model.zip" FontFamily="Consolas"
+                                                                 Background="{DynamicResource SurfaceTintBrush}"/>
+                                                            <Run Text="."/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </materialDesign:Card>
+                                            </UniformGrid>
+
+                                            <!-- PERFORMANCE STRIP -->
+                                            <materialDesign:Card Margin="0,14,0,0"
+                                                                 UniformCornerRadius="12"
+                                                                 Padding="18,16"
+                                                                 Background="{DynamicResource MaterialDesignPaper}"
+                                                                 BorderBrush="{DynamicResource PrimaryHueMidBrush}"
+                                                                 BorderThickness="1"
+                                                                 materialDesign:ElevationAssist.Elevation="Dp0">
+                                                <StackPanel>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="ChartLine"
+                                                                                 Width="14" Height="14"
+                                                                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                                 VerticalAlignment="Center"/>
+                                                        <TextBlock Text="MODEL PERFORMANCE"
+                                                                   FontSize="10" FontWeight="Bold"
+                                                                   Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                   Margin="6,0,0,0"
+                                                                   VerticalAlignment="Center"
+                                                                   Typography.Capitals="AllSmallCaps"/>
+                                                        <TextBlock Text="· micro-accuracy on test set 2015/16"
+                                                                   FontSize="10" Opacity="0.55"
+                                                                   Margin="6,0,0,0"
+                                                                   VerticalAlignment="Center"/>
+                                                    </StackPanel>
+
+                                                    <UniformGrid Rows="1" Columns="4" Margin="0,12,0,0">
+                                                        <StackPanel Margin="0,0,16,0">
+                                                            <TextBlock Text="ACCURACY"
+                                                                       FontSize="10" FontWeight="Bold" Opacity="0.55"
+                                                                       Typography.Capitals="AllSmallCaps"/>
+                                                            <TextBlock Text="44.6%" FontSize="22" FontWeight="Bold"/>
+                                                            <ProgressBar Value="44.6" Maximum="100"
+                                                                         Height="4" Margin="0,4,0,0"
+                                                                         Background="{DynamicResource MaterialDesignDivider}"
+                                                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                         BorderThickness="0"/>
+                                                        </StackPanel>
+                                                        <StackPanel Margin="0,0,16,0">
+                                                            <TextBlock Text="BASELINE"
+                                                                       FontSize="10" FontWeight="Bold" Opacity="0.55"
+                                                                       Typography.Capitals="AllSmallCaps"/>
+                                                            <TextBlock Text="~45%" FontSize="22" FontWeight="Bold"/>
+                                                            <ProgressBar Value="45" Maximum="100"
+                                                                         Height="4" Margin="0,4,0,0"
+                                                                         Background="{DynamicResource MaterialDesignDivider}"
+                                                                         Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                                         BorderThickness="0"/>
+                                                        </StackPanel>
+                                                        <StackPanel Margin="0,0,16,0">
+                                                            <TextBlock Text="CLASSES"
+                                                                       FontSize="10" FontWeight="Bold" Opacity="0.55"
+                                                                       Typography.Capitals="AllSmallCaps"/>
+                                                            <TextBlock Text="3" FontSize="22" FontWeight="Bold"/>
+                                                            <TextBlock Text="Away · Draw · Home"
+                                                                       FontSize="10" Opacity="0.6"
+                                                                       Margin="0,4,0,0"/>
+                                                        </StackPanel>
+                                                        <StackPanel>
+                                                            <TextBlock Text="LOOKBACK"
+                                                                       FontSize="10" FontWeight="Bold" Opacity="0.55"
+                                                                       Typography.Capitals="AllSmallCaps"/>
+                                                            <TextBlock Text="5 games" FontSize="22" FontWeight="Bold"/>
+                                                            <TextBlock Text="rolling window"
+                                                                       FontSize="10" Opacity="0.6"
+                                                                       Margin="0,4,0,0"/>
+                                                        </StackPanel>
+                                                    </UniformGrid>
                                                 </StackPanel>
+                                            </materialDesign:Card>
+
+                                            <!-- EXPANDER: How it works (wrapped in rounded clip) -->
+                                            <Border Margin="0,14,0,0"
+                                                    CornerRadius="12"
+                                                    Background="{DynamicResource MaterialDesignPaper}"
+                                                    BorderBrush="{DynamicResource MaterialDesignDivider}"
+                                                    BorderThickness="1"
+                                                    ClipToBounds="True">
+                                                <Border.Resources>
+                                                    <Style TargetType="Expander" BasedOn="{StaticResource MaterialDesignExpander}">
+                                                        <Setter Property="Background"      Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                        <Setter Property="materialDesign:ExpanderAssist.HorizontalHeaderPadding" Value="16,12"/>
+                                                    </Style>
+                                                </Border.Resources>
+                                                <Expander>
+                                                    <Expander.Header>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <materialDesign:PackIcon Kind="InformationOutline"
+                                                                                     Width="16" Height="16"
+                                                                                     Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                                     VerticalAlignment="Center"/>
+                                                            <TextBlock Text="How predictions are made"
+                                                                       FontSize="13" FontWeight="SemiBold"
+                                                                       Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                       VerticalAlignment="Center"
+                                                                       Margin="8,0,0,0"/>
+                                                        </StackPanel>
+                                                    </Expander.Header>
+                                                    <TextBlock Margin="16,4,16,16"
+                                                               TextWrapping="Wrap"
+                                                               FontSize="12" Opacity="0.75"
+                                                               LineHeight="18"
+                                                               Text="For each match, the engine aggregates the last 5 games of both teams into time-aware features (rolling means, goal-differential trends, head-to-head history). The OVA meta-learner runs three FastTree binary classifiers — Home-win, Draw, Away-win — and normalises their scores via softmax to produce calibrated probabilities shown on the main dashboard. Football outcomes are inherently difficult to predict: a micro-accuracy of ~44.6 % is competitive given that the naive 'always Home' baseline achieves ~45 %."/>
+                                                </Expander>
                                             </Border>
 
                                         </StackPanel>
