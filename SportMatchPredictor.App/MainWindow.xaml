@@ -16,11 +16,12 @@
 
     <Window.Resources>
         <converters:PathToImageSourceConverter x:Key="PathToImageSourceConverter"/>
+        <converters:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter"/>
+        <converters:LessThanZeroConverter x:Key="LessThanZeroConverter"/>
         <DataTemplate x:Key="TeamItemTemplate">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <Grid Width="24" Height="24" Margin="0,0,8,0">
-                    <Border CornerRadius="12"
-                            Background="{DynamicResource PrimaryHueLightBrush}">
+                    <Border CornerRadius="12" Background="{DynamicResource PrimaryHueLightBrush}">
                         <Border.Style>
                             <Style TargetType="Border">
                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -105,6 +106,7 @@
                                    VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
+
                 <Button x:Name="ThemeToggleBtn"
                         Click="ThemeToggleBtn_Click"
                         HorizontalAlignment="Right"
@@ -121,9 +123,9 @@
                         ToolTip="Toggle dark/light theme"
                         Margin="0,0,110,0">
                     <materialDesign:PackIcon x:Name="ThemeIcon"
-                             Kind="WeatherNight"
-                             Width="20" Height="20"
-                             Foreground="White"/>
+                                             Kind="WeatherNight"
+                                             Width="20" Height="20"
+                                             Foreground="White"/>
                 </Button>
             </Grid>
         </Border>
@@ -202,7 +204,8 @@
                                     <Style TargetType="ComboBox" BasedOn="{StaticResource SelectionComboBoxStyle}">
                                         <Setter Property="Padding" Value="32,8,8,8"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
+                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, RelativeSource={RelativeSource Self}}"
+                                                         Value="{x:Null}">
                                                 <Setter Property="Padding" Value="8,8,8,8"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -216,9 +219,11 @@
                                    RenderOptions.BitmapScalingMode="HighQuality">
                                 <Image.Style>
                                     <Style TargetType="Image">
-                                        <Setter Property="Source" Value="{Binding SelectedItem.LogoPath, ElementName=HomeTeamCombo, Converter={StaticResource PathToImageSourceConverter}}"/>
+                                        <Setter Property="Source"
+                                                Value="{Binding SelectedItem.LogoPath, ElementName=HomeTeamCombo, Converter={StaticResource PathToImageSourceConverter}}"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, ElementName=HomeTeamCombo}" Value="{x:Null}">
+                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, ElementName=HomeTeamCombo}"
+                                                         Value="{x:Null}">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -235,8 +240,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Rectangle Grid.Column="0" Height="1"
-               VerticalAlignment="Center"
-               Fill="{DynamicResource MaterialDesignDivider}"/>
+                                       VerticalAlignment="Center"
+                                       Fill="{DynamicResource MaterialDesignDivider}"/>
                             <Button Grid.Column="1"
                                     x:Name="SwapBtn"
                                     Click="SwapBtn_Click"
@@ -250,14 +255,14 @@
                                     materialDesign:ElevationAssist.Elevation="Dp2"
                                     ToolTip="Swap teams">
                                 <materialDesign:PackIcon Kind="SwapHorizontal"
-                             Width="20" Height="20"
-                             Foreground="White"
-                             HorizontalAlignment="Center"
-                             VerticalAlignment="Center"/>
+                                                         Width="20" Height="20"
+                                                         Foreground="White"
+                                                         HorizontalAlignment="Center"
+                                                         VerticalAlignment="Center"/>
                             </Button>
                             <Rectangle Grid.Column="2" Height="1"
-               VerticalAlignment="Center"
-               Fill="{DynamicResource MaterialDesignDivider}"/>
+                                       VerticalAlignment="Center"
+                                       Fill="{DynamicResource MaterialDesignDivider}"/>
                         </Grid>
 
                         <TextBlock Text="AWAY TEAM"
@@ -273,7 +278,8 @@
                                     <Style TargetType="ComboBox" BasedOn="{StaticResource SelectionComboBoxStyle}">
                                         <Setter Property="Padding" Value="32,8,8,8"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
+                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, RelativeSource={RelativeSource Self}}"
+                                                         Value="{x:Null}">
                                                 <Setter Property="Padding" Value="8,8,8,8"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -287,9 +293,11 @@
                                    RenderOptions.BitmapScalingMode="HighQuality">
                                 <Image.Style>
                                     <Style TargetType="Image">
-                                        <Setter Property="Source" Value="{Binding SelectedItem.LogoPath, ElementName=AwayTeamCombo, Converter={StaticResource PathToImageSourceConverter}}"/>
+                                        <Setter Property="Source"
+                                                Value="{Binding SelectedItem.LogoPath, ElementName=AwayTeamCombo, Converter={StaticResource PathToImageSourceConverter}}"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, ElementName=AwayTeamCombo}" Value="{x:Null}">
+                                            <DataTrigger Binding="{Binding SelectedItem.LogoPath, ElementName=AwayTeamCombo}"
+                                                         Value="{x:Null}">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -381,7 +389,7 @@
                                  materialDesign:ElevationAssist.Elevation="Dp3"
                                  UniformCornerRadius="12"
                                  Margin="10,0,0,0">
-                <ScrollViewer x:Name="ResultScrollViewer" 
+                <ScrollViewer x:Name="ResultScrollViewer"
                               VerticalScrollBarVisibility="Disabled"
                               HorizontalScrollBarVisibility="Disabled">
                     <Grid MinHeight="640">
@@ -431,40 +439,40 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0"
-            VerticalAlignment="Center"
-            Margin="0,0,22,0">
+                                            VerticalAlignment="Center"
+                                            Margin="0,0,22,0">
                                     <TextBlock Text="Predicted outcome"
-               FontSize="12"
-               Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                               FontSize="12"
+                                               Foreground="{DynamicResource MaterialDesignBodyLight}"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,4,0,8" VerticalAlignment="Center">
                                         <Image x:Name="HomeLogo"
-       Width="32" Height="32"
-       Visibility="Collapsed"
-       Margin="0,0,10,0"
-       VerticalAlignment="Center"
-       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                               Width="32" Height="32"
+                                               Visibility="Collapsed"
+                                               Margin="0,0,10,0"
+                                               VerticalAlignment="Center"
+                                               RenderOptions.BitmapScalingMode="HighQuality"/>
                                         <Image x:Name="AwayLogo"
-       Width="32" Height="32"
-       Visibility="Collapsed"
-       Margin="0,0,10,0"
-       VerticalAlignment="Center"
-       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                               Width="32" Height="32"
+                                               Visibility="Collapsed"
+                                               Margin="0,0,10,0"
+                                               VerticalAlignment="Center"
+                                               RenderOptions.BitmapScalingMode="HighQuality"/>
                                         <TextBlock x:Name="PredictedLabelText"
-                   Text="—"
-                   FontSize="34"
-                   FontWeight="Bold"
-                   Foreground="{DynamicResource PrimaryHueMidBrush}"
-                   VerticalAlignment="Center"/>
+                                                   Text="—"
+                                                   FontSize="34"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                   VerticalAlignment="Center"/>
                                         <Image x:Name="AwayLogoRight"
-       Width="32" Height="32"
-       Visibility="Collapsed"
-       Margin="10,0,0,0"
-       VerticalAlignment="Center"
-       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                               Width="32" Height="32"
+                                               Visibility="Collapsed"
+                                               Margin="10,0,0,0"
+                                               VerticalAlignment="Center"
+                                               RenderOptions.BitmapScalingMode="HighQuality"/>
                                     </StackPanel>
                                     <TextBlock Text="Based on recent form and engineered match features."
-               FontSize="12"
-               Opacity="0.6"/>
+                                               FontSize="12"
+                                               Opacity="0.6"/>
                                 </StackPanel>
 
                                 <Border Grid.Column="1"
@@ -658,6 +666,7 @@
                                 Background="{DynamicResource MaterialDesignPaper}">
                             <TabControl Style="{StaticResource MaterialDesignTabControl}"
                                         materialDesign:ColorZoneAssist.Mode="PrimaryMid"
+                                        BorderBrush="{DynamicResource MaterialDesignDivider}"
                                         ClipToBounds="True">
 
                                 <!-- ── Tab 1: Computed Features ── -->
@@ -665,26 +674,26 @@
                                     <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
                                         <StackPanel>
                                             <TextBlock Text="Feature Summary"
-                       FontSize="12" FontWeight="SemiBold"
-                       Margin="0,0,0,2"/>
+                                                       FontSize="12" FontWeight="SemiBold"
+                                                       Margin="0,0,0,2"/>
                                             <TextBlock Text="Generated statistics used by the model"
-                       FontSize="11" Opacity="0.55"
-                       Margin="0,0,0,10"/>
+                                                       FontSize="11" Opacity="0.55"
+                                                       Margin="0,0,0,10"/>
                                             <DataGrid x:Name="FeaturesGrid"
-                      Style="{StaticResource MaterialDesignDataGrid}"
-                      AutoGenerateColumns="False"
-                      IsReadOnly="True"
-                      HeadersVisibility="Column"
-                      Background="Transparent"
-                      BorderThickness="0"
-                      CanUserResizeColumns="False"
-                      CanUserReorderColumns="False"
-                      AlternationCount="0"
-                      GridLinesVisibility="Horizontal"
-                      SelectionMode="Single"
-                      SelectionUnit="FullRow"
-                      HorizontalGridLinesBrush="{DynamicResource MaterialDesignDivider}"
-                      HorizontalScrollBarVisibility="Disabled">
+                                                      Style="{StaticResource MaterialDesignDataGrid}"
+                                                      AutoGenerateColumns="False"
+                                                      IsReadOnly="True"
+                                                      HeadersVisibility="Column"
+                                                      Background="Transparent"
+                                                      BorderThickness="0"
+                                                      CanUserResizeColumns="False"
+                                                      CanUserReorderColumns="False"
+                                                      AlternationCount="0"
+                                                      GridLinesVisibility="Horizontal"
+                                                      SelectionMode="Single"
+                                                      SelectionUnit="FullRow"
+                                                      HorizontalGridLinesBrush="{DynamicResource MaterialDesignDivider}"
+                                                      HorizontalScrollBarVisibility="Disabled">
                                                 <DataGrid.RowStyle>
                                                     <Style TargetType="DataGridRow">
                                                         <Setter Property="IsHitTestVisible" Value="False"/>
@@ -692,12 +701,12 @@
                                                 </DataGrid.RowStyle>
                                                 <DataGrid.Columns>
                                                     <DataGridTextColumn Header="Metric"
-                                        Binding="{Binding Metric}"
-                                        FontWeight="Medium"
-                                        Width="*"/>
+                                                                        Binding="{Binding Metric}"
+                                                                        FontWeight="Medium"
+                                                                        Width="*"/>
                                                     <DataGridTextColumn Header="Home"
-                                        Binding="{Binding Home, StringFormat={}{0:0.###}}"
-                                        Width="90">
+                                                                        Binding="{Binding Home, StringFormat={}{0:0.###}}"
+                                                                        Width="90">
                                                         <DataGridTextColumn.ElementStyle>
                                                             <Style TargetType="TextBlock">
                                                                 <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -706,8 +715,8 @@
                                                         </DataGridTextColumn.ElementStyle>
                                                     </DataGridTextColumn>
                                                     <DataGridTextColumn Header="Away"
-                                        Binding="{Binding Away, StringFormat={}{0:0.###}}"
-                                        Width="90">
+                                                                        Binding="{Binding Away, StringFormat={}{0:0.###}}"
+                                                                        Width="90">
                                                         <DataGridTextColumn.ElementStyle>
                                                             <Style TargetType="TextBlock">
                                                                 <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -716,12 +725,22 @@
                                                         </DataGridTextColumn.ElementStyle>
                                                     </DataGridTextColumn>
                                                     <DataGridTextColumn Header="Diff"
-                                        Binding="{Binding Diff, StringFormat={}{0:0.###}}"
-                                        Width="90">
+                    Binding="{Binding Diff, StringFormat={}{0:0.###}}"
+                    Width="90"
+                    CanUserSort="False">
                                                         <DataGridTextColumn.ElementStyle>
                                                             <Style TargetType="TextBlock">
                                                                 <Setter Property="HorizontalAlignment" Value="Right"/>
                                                                 <Setter Property="Margin" Value="0,0,12,0"/>
+                                                                <Setter Property="FontWeight" Value="Bold"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Diff, Converter={StaticResource GreaterThanZeroConverter}}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Diff, Converter={StaticResource LessThanZeroConverter}}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
                                                             </Style>
                                                         </DataGridTextColumn.ElementStyle>
                                                     </DataGridTextColumn>
@@ -746,116 +765,126 @@
 
                                                 <!-- Algorithm card -->
                                                 <materialDesign:Card Grid.Column="0"
-                                     Padding="16"
-                                     Margin="0,0,6,0"
-                                     UniformCornerRadius="8"
-                                     materialDesign:ElevationAssist.Elevation="Dp1">
-                                                    <StackPanel>
-                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                         Padding="16"
+                         Margin="0,0,6,0"
+                         UniformCornerRadius="8"
+                         materialDesign:ElevationAssist.Elevation="Dp1">
+                                                    <StackPanel VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+
+                                                        <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,16">
                                                             <materialDesign:PackIcon Kind="Brain"
-                                                     Width="18" Height="18"
-                                                     VerticalAlignment="Center"
-                                                     Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                                     Margin="0,0,8,0"/>
+                                         Width="18" Height="18"
+                                         VerticalAlignment="Center"
+                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                         Margin="0,0,8,0"/>
                                                             <TextBlock Text="Algorithm"
-                                       FontSize="13" FontWeight="SemiBold"
-                                       VerticalAlignment="Center"/>
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
                                                         </StackPanel>
-                                                        <Grid>
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <Grid.RowDefinitions>
-                                                                <RowDefinition Height="Auto"/>
-                                                                <RowDefinition Height="Auto"/>
-                                                                <RowDefinition Height="Auto"/>
-                                                                <RowDefinition Height="Auto"/>
-                                                            </Grid.RowDefinitions>
-                                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Classifier"
-                                       Opacity="0.55" FontSize="12" Margin="0,0,12,6"/>
-                                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="OVA + FastTree"
-                                       FontSize="12" FontWeight="Medium" Margin="0,0,0,6"/>
-                                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Framework"
-                                       Opacity="0.55" FontSize="12" Margin="0,0,12,6"/>
-                                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="ML.NET · .NET 8"
-                                       FontSize="12" FontWeight="Medium" Margin="0,0,0,6"/>
-                                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Features"
-                                       Opacity="0.55" FontSize="12" Margin="0,0,12,6"/>
-                                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="14 · last 5 games"
-                                       FontSize="12" FontWeight="Medium" Margin="0,0,0,6"/>
-                                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Split"
-                                       Opacity="0.55" FontSize="12" Margin="0,0,12,0"/>
-                                                            <TextBlock Grid.Row="3" Grid.Column="1" Text="Time-based · 2015/16"
-                                       FontSize="12" FontWeight="Medium"/>
-                                                        </Grid>
+
+                                                        <!-- Icon badge -->
+                                                        <Border Width="100" Height="100"
+                    CornerRadius="50"
+                    Background="{DynamicResource SecondaryHueMidBrush}"
+                    HorizontalAlignment="Center"
+                    Margin="0,0,0,16">
+                                                            <materialDesign:PackIcon Kind="TuneVariant"
+                                         Width="48" Height="48"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                                        </Border>
+
+                                                        <TextBlock Text="OVA + FastTree"
+                       FontSize="15" FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,8"/>
+                                                        <TextBlock Text="ML.NET · .NET 8"
+                       FontSize="12" Opacity="0.55"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,4"/>
+                                                        <TextBlock Text="14 features · last 5 games"
+                       FontSize="12" Opacity="0.55"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,4"/>
+                                                        <TextBlock Text="Time-based split · 2015/16"
+                       FontSize="12" Opacity="0.55"
+                       HorizontalAlignment="Center"/>
                                                     </StackPanel>
                                                 </materialDesign:Card>
 
                                                 <!-- Performance card -->
                                                 <materialDesign:Card Grid.Column="1"
-                                     Padding="16"
-                                     Margin="6,0,0,0"
-                                     UniformCornerRadius="8"
-                                     materialDesign:ElevationAssist.Elevation="Dp1">
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
+                         Padding="16"
+                         Margin="6,0,0,0"
+                         UniformCornerRadius="8"
+                         materialDesign:ElevationAssist.Elevation="Dp1">
+                                                    <StackPanel VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
 
-                                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                                                <materialDesign:PackIcon Kind="ChartBar"
-                                                         Width="18" Height="18"
-                                                         VerticalAlignment="Center"
-                                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                                         Margin="0,0,8,0"/>
-                                                                <TextBlock Text="Performance"
-                                           FontSize="13" FontWeight="SemiBold"
-                                           VerticalAlignment="Center"/>
-                                                            </StackPanel>
-                                                            <TextBlock Text="Baseline: ~45%"
-                                       FontSize="12" Opacity="0.55" Margin="0,0,0,4"/>
-                                                            <TextBlock Text="Test: 2015/2016"
-                                       FontSize="12" Opacity="0.55" Margin="0,0,0,4"/>
-                                                            <TextBlock Text="Away · Draw · Home"
-                                       FontSize="12" Opacity="0.55"/>
+                                                        <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,16">
+                                                            <materialDesign:PackIcon Kind="ChartBar"
+                                         Width="18" Height="18"
+                                         VerticalAlignment="Center"
+                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                         Margin="0,0,8,0"/>
+                                                            <TextBlock Text="Performance"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
                                                         </StackPanel>
 
-                                                        <Grid Grid.Column="1" Width="80" Height="80" Margin="12,0,0,0">
+                                                        <Grid Width="100" Height="100"
+                  HorizontalAlignment="Center"
+                  Margin="0,0,0,16">
                                                             <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
-                                         Value="44.6" Maximum="100"
-                                         Width="80" Height="80"
-                                         Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                             Value="44.6" Maximum="100"
+                             Width="100" Height="100"
+                             Foreground="{DynamicResource PrimaryHueMidBrush}"/>
                                                             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                                                                 <TextBlock Text="44.6%"
-                                           FontSize="14" FontWeight="Bold"
-                                           HorizontalAlignment="Center"/>
+                               FontSize="18" FontWeight="Bold"
+                               HorizontalAlignment="Center"/>
                                                                 <TextBlock Text="Accuracy"
-                                           FontSize="10" Opacity="0.55"
-                                           HorizontalAlignment="Center"/>
+                               FontSize="10" Opacity="0.55"
+                               HorizontalAlignment="Center"/>
                                                             </StackPanel>
                                                         </Grid>
-                                                    </Grid>
+
+                                                        <TextBlock Text="Baseline: ~45%"
+                       FontSize="12" Opacity="0.55"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,4"/>
+                                                        <TextBlock Text="Test: 2015 / 2016"
+                       FontSize="12" Opacity="0.55"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,4"/>
+                                                        <TextBlock Text="Away · Draw · Home"
+                       FontSize="12" Opacity="0.55"
+                       HorizontalAlignment="Center"/>
+                                                    </StackPanel>
                                                 </materialDesign:Card>
 
                                             </Grid>
 
                                             <!-- Note -->
                                             <Border Padding="14"
-                    CornerRadius="8"
-                    Background="{DynamicResource SecondaryAccentBrush}">
+                                                    CornerRadius="8"
+                                                    Background="{DynamicResource SecondaryAccentBrush}">
                                                 <StackPanel Orientation="Horizontal">
                                                     <materialDesign:PackIcon Kind="InformationOutline"
-                                             Width="16" Height="16"
-                                             VerticalAlignment="Top"
-                                             Margin="0,1,10,0"
-                                             Opacity="0.7"/>
+                                                                             Width="16" Height="16"
+                                                                             VerticalAlignment="Top"
+                                                                             Margin="0,1,10,0"
+                                                                             Opacity="0.7"/>
                                                     <TextBlock TextWrapping="Wrap"
-                               FontSize="12"
-                               Opacity="0.75"
-                               Text="Football outcomes are inherently difficult to predict. A micro accuracy of ~44.6% is competitive given that the naive baseline (always predicting Home Win) achieves ~45%. The model captures relative team form rather than absolute team strength."/>
+                                                               FontSize="12"
+                                                               Opacity="0.75"
+                                                               Text="Football outcomes are inherently difficult to predict. A micro accuracy of ~44.6% is competitive given that the naive baseline (always predicting Home Win) achieves ~45%. The model captures relative team form rather than absolute team strength."/>
                                                 </StackPanel>
                                             </Border>
 
@@ -883,37 +912,37 @@
 
                                 <!-- Central content block -->
                                 <StackPanel Grid.Row="0"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center">
+                                            VerticalAlignment="Center"
+                                            HorizontalAlignment="Center">
 
                                     <!-- Icon in a round badge -->
                                     <Border Width="120" Height="120"
-                    CornerRadius="60"
-                    Background="{DynamicResource SecondaryHueMidBrush}"
-                    HorizontalAlignment="Center"
-                    Margin="0,0,0,24">
+                                            CornerRadius="60"
+                                            Background="{DynamicResource SecondaryHueMidBrush}"
+                                            HorizontalAlignment="Center"
+                                            Margin="0,0,0,24">
                                         <materialDesign:PackIcon Kind="SoccerField"
-                                         Width="60" Height="60"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center"
-                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                         Opacity="0.85"/>
+                                                                 Width="60" Height="60"
+                                                                 HorizontalAlignment="Center"
+                                                                 VerticalAlignment="Center"
+                                                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                 Opacity="0.85"/>
                                     </Border>
 
                                     <TextBlock Text="Ready to predict"
-                       FontSize="22"
-                       FontWeight="SemiBold"
-                       HorizontalAlignment="Center"
-                       Opacity="0.7"
-                       Margin="0,0,0,8"/>
+                                               FontSize="22"
+                                               FontWeight="SemiBold"
+                                               HorizontalAlignment="Center"
+                                               Opacity="0.7"
+                                               Margin="0,0,0,8"/>
                                     <TextBlock Text="Select a season and both teams, then press Predict Match"
-                       FontSize="13"
-                       HorizontalAlignment="Center"
-                       TextAlignment="Center"
-                       Opacity="0.45"
-                       LineHeight="22"
-                       MaxWidth="320"
-                       Margin="0,0,0,24"/>
+                                               FontSize="13"
+                                               HorizontalAlignment="Center"
+                                               TextAlignment="Center"
+                                               Opacity="0.45"
+                                               LineHeight="22"
+                                               MaxWidth="320"
+                                               Margin="0,0,0,24"/>
 
                                     <!-- Random Match button -->
                                     <Button x:Name="RandomBtn"
@@ -931,10 +960,10 @@
                                             Margin="0,0,0,40">
                                         <StackPanel Orientation="Horizontal">
                                             <materialDesign:PackIcon x:Name="RandomIcon"
-                                                Kind="DiceMultiple"
-                                                Width="18" Height="18"
-                                                VerticalAlignment="Center"
-                                                Margin="0,0,8,0"/>
+                                                                     Kind="DiceMultiple"
+                                                                     Width="18" Height="18"
+                                                                     VerticalAlignment="Center"
+                                                                     Margin="0,0,8,0"/>
                                             <TextBlock Text="Surprise Me" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
@@ -951,73 +980,73 @@
 
                                         <!-- Step 1 -->
                                         <Border Grid.Column="0"
-                        Padding="16,14"
-                        CornerRadius="10"
-                        Background="{DynamicResource MaterialDesignToolBarBackground}">
+                                                Padding="16,14"
+                                                CornerRadius="10"
+                                                Background="{DynamicResource MaterialDesignToolBarBackground}">
                                             <StackPanel HorizontalAlignment="Center">
                                                 <materialDesign:PackIcon Kind="Soccer"
-                                                 Width="24" Height="24"
-                                                 HorizontalAlignment="Center"
-                                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                                 Margin="0,0,0,8"/>
+                                                                         Width="24" Height="24"
+                                                                         HorizontalAlignment="Center"
+                                                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                         Margin="0,0,0,8"/>
                                                 <TextBlock Text="Select Match"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,0,0,4"/>
+                                                           FontSize="12" FontWeight="SemiBold"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,0,0,4"/>
                                                 <TextBlock Text="11 European leagues · 25,000+ matches"
-                                   FontSize="11"
-                                   HorizontalAlignment="Center"
-                                   TextAlignment="Center"
-                                   Opacity="0.55"
-                                   TextWrapping="Wrap"/>
+                                                           FontSize="11"
+                                                           HorizontalAlignment="Center"
+                                                           TextAlignment="Center"
+                                                           Opacity="0.55"
+                                                           TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </Border>
 
                                         <!-- Step 2 -->
                                         <Border Grid.Column="2"
-                        Padding="16,14"
-                        CornerRadius="10"
-                        Background="{DynamicResource MaterialDesignToolBarBackground}">
+                                                Padding="16,14"
+                                                CornerRadius="10"
+                                                Background="{DynamicResource MaterialDesignToolBarBackground}">
                                             <StackPanel HorizontalAlignment="Center">
                                                 <materialDesign:PackIcon Kind="Brain"
-                                                 Width="24" Height="24"
-                                                 HorizontalAlignment="Center"
-                                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                                 Margin="0,0,0,8"/>
+                                                                         Width="24" Height="24"
+                                                                         HorizontalAlignment="Center"
+                                                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                         Margin="0,0,0,8"/>
                                                 <TextBlock Text="Crunch Data"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,0,0,4"/>
+                                                           FontSize="12" FontWeight="SemiBold"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,0,0,4"/>
                                                 <TextBlock Text="14 dynamic features · last 5 games"
-                                   FontSize="11"
-                                   HorizontalAlignment="Center"
-                                   TextAlignment="Center"
-                                   Opacity="0.55"
-                                   TextWrapping="Wrap"/>
+                                                           FontSize="11"
+                                                           HorizontalAlignment="Center"
+                                                           TextAlignment="Center"
+                                                           Opacity="0.55"
+                                                           TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </Border>
 
                                         <!-- Step 3 -->
                                         <Border Grid.Column="4"
-                        Padding="16,14"
-                        CornerRadius="10"
-                        Background="{DynamicResource MaterialDesignToolBarBackground}">
+                                                Padding="16,14"
+                                                CornerRadius="10"
+                                                Background="{DynamicResource MaterialDesignToolBarBackground}">
                                             <StackPanel HorizontalAlignment="Center">
                                                 <materialDesign:PackIcon Kind="ChartBar"
-                                                 Width="24" Height="24"
-                                                 HorizontalAlignment="Center"
-                                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                                 Margin="0,0,0,8"/>
+                                                                         Width="24" Height="24"
+                                                                         HorizontalAlignment="Center"
+                                                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                         Margin="0,0,0,8"/>
                                                 <TextBlock Text="Get Prediction"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,0,0,4"/>
+                                                           FontSize="12" FontWeight="SemiBold"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,0,0,4"/>
                                                 <TextBlock Text="FastTree OVA · Home / Draw / Away"
-                                   FontSize="11"
-                                   HorizontalAlignment="Center"
-                                   TextAlignment="Center"
-                                   Opacity="0.55"
-                                   TextWrapping="Wrap"/>
+                                                           FontSize="11"
+                                                           HorizontalAlignment="Center"
+                                                           TextAlignment="Center"
+                                                           Opacity="0.55"
+                                                           TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </Border>
 
@@ -1026,21 +1055,21 @@
 
                                 <!-- Quick Stats panel at bottom -->
                                 <Border Grid.Row="1"
-                Padding="20,12"
-                CornerRadius="10"
-                Background="{DynamicResource MaterialDesignToolBarBackground}"
-                Margin="0,16,0,0">
+                                        Padding="20,12"
+                                        CornerRadius="10"
+                                        Background="{DynamicResource MaterialDesignToolBarBackground}"
+                                        Margin="0,16,0,0">
                                     <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Center">
+                                                HorizontalAlignment="Center">
                                         <materialDesign:PackIcon Kind="DatabaseOutline"
-                                         Width="16" Height="16"
-                                         VerticalAlignment="Center"
-                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                         Margin="0,0,8,0"/>
+                                                                 Width="16" Height="16"
+                                                                 VerticalAlignment="Center"
+                                                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                 Margin="0,0,8,0"/>
                                         <TextBlock x:Name="QuickStatsText"
-                           FontSize="12"
-                           Opacity="0.6"
-                           VerticalAlignment="Center"/>
+                                                   FontSize="12"
+                                                   Opacity="0.6"
+                                                   VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 

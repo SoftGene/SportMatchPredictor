@@ -202,7 +202,6 @@ public partial class MainWindow : Window
                 new() { Metric = "Points Per Game",   Home = features.HomePointsPerGame,   Away = features.AwayPointsPerGame,   Diff = features.PointsPerGameDiff },
                 new() { Metric = "Win Rate",          Home = features.HomeWinRate,         Away = features.AwayWinRate,         Diff = features.WinRateDiff },
                 new() { Metric = "GoalDiff Diff",     Home = features.GoalDiffDiff,        Away = 0,                            Diff = features.GoalDiffDiff },
-                new() { Metric = "League Id",         Home = features.LeagueId,            Away = 0,                            Diff = 0 },
             };
             FeaturesDebug.Text = string.Empty;
 
